@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ChatBSK</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+:root{
+  --bg:#060a0f;--s1:#0c1118;--s2:#121920;--s3:#18222c;
+  --b1:#1e2d3a;--b2:#263545;--b3:#304555;
+  --a1:#00d4b4;--a2:#00a88e;--a1d:rgba(0,212,180,.12);
+  --bl:#2d8fff;--bld:rgba(45,143,255,.12);
+  --gr:#1fcf6a;--grd:rgba(31,207,106,.12);
+  --or:#ff8c42;--ord:rgba(255,140,66,.12);
+  --rd:#ff3d5a;--rdd:rgba(255,61,90,.12);
+  --t1:#dce8f0;--t2:#6e8fa3;--t3:#3a5568;--t4:#1e3344;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:8px;--rs:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-family:var(--sans);}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(0,212,180,.04) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 100%,rgba(45,143,255,.03) 0%,transparent 60%);}
+
+/* ─── LAYOUT ─── */
+#root{position:relative;z-index:1;height:100%;max-width:500px;margin:0 auto;display:flex;flex-direction:column;}
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;animation:up .2s ease;}
+.page.on{display:flex;}
+@keyframes up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── TOPBAR ─── */
+.bar{display:flex;align-items:center;gap:10px;padding:15px 18px 12px;border-bottom:1px solid var(--b1);flex-shrink:0;}
+.bar-title{font-size:16px;font-weight:700;color:#fff;flex:1;}
+.bar-sub{font-size:10px;color:var(--t3);font-family:var(--mono);letter-spacing:.8px;margin-top:1px;}
+.ibtn{width:32px;height:32px;border-radius:var(--rs);background:transparent;border:1px solid var(--b1);
+  color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .15s;font-size:15px;flex-shrink:0;}
+.ibtn:hover{border-color:var(--a1);color:var(--a1);}
+
+/* ─── APP HEADER ─── */
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;border-bottom:1px solid var(--b1);flex-shrink:0;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-logo{width:32px;height:32px;}
+.brand-name{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--a1);letter-spacing:2px;
+  text-shadow:0 0 20px rgba(0,212,180,.3);}
+.brand-ver{font-size:10px;color:var(--t3);letter-spacing:1px;font-family:var(--mono);}
+.myid{font-family:var(--mono);font-size:10px;color:var(--t3);padding:4px 10px;
+  border:1px solid var(--b1);border-radius:20px;cursor:pointer;transition:all .15s;}
+.myid:hover{border-color:var(--b2);color:var(--t2);}
+
+/* ─── CONTACT LIST ─── */
+.clist{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--b2) transparent;}
+.citem{display:flex;align-items:center;gap:13px;padding:13px 18px;cursor:pointer;transition:background .12s;position:relative;}
+.citem:hover{background:rgba(255,255,255,.025);}
+.citem::after{content:'';position:absolute;bottom:0;left:18px;right:18px;height:1px;background:var(--b1);}
+.citem:last-child::after{display:none;}
+.cav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;font-family:var(--mono);flex-shrink:0;position:relative;}
+.cav-badge{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg);}
+.cav-badge.lan{background:var(--gr);}
+.cav-badge.net{background:var(--or);}
+.cav-badge.relay{background:var(--rd);}
+.cav-badge.off{background:var(--b3);}
+.cbody{flex:1;min-width:0;}
+.cname{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cprev{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cmeta{flex-shrink:0;text-align:right;}
+.ctime{font-size:10px;color:var(--t3);font-family:var(--mono);}
+
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 24px;text-align:center;}
+.empty-ico{font-size:52px;opacity:.25;}
+.empty-h{font-size:17px;font-weight:700;color:var(--t1);opacity:.5;}
+.empty-p{font-size:13px;color:var(--t3);line-height:1.65;}
+
+.fab{position:absolute;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
+  background:var(--a1);border:none;color:#000;font-size:22px;cursor:pointer;z-index:5;
+  box-shadow:0 4px 20px rgba(0,212,180,.35);transition:all .18s;display:flex;align-items:center;justify-content:center;}
+.fab:hover{transform:scale(1.07);box-shadow:0 6px 28px rgba(0,212,180,.5);}
+
+/* ─── METHOD CARDS ─── */
+.methods{display:flex;flex-direction:column;gap:10px;padding:16px;}
+.mc{display:flex;align-items:center;gap:14px;padding:17px 18px;border-radius:var(--r);
+  border:1px solid var(--b1);background:var(--s1);cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.mc::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .18s;}
+.mc:hover{transform:translateY(-1px);}
+.mc:hover::before{opacity:1;}
+.mc.mlan:hover{border-color:rgba(31,207,106,.4);box-shadow:0 4px 20px rgba(31,207,106,.1);}
+.mc.mlan::before{background:radial-gradient(ellipse at left,rgba(31,207,106,.06),transparent 70%);}
+.mc.mqr:hover{border-color:rgba(0,212,180,.4);box-shadow:0 4px 20px rgba(0,212,180,.1);}
+.mc.mqr::before{background:radial-gradient(ellipse at left,rgba(0,212,180,.06),transparent 70%);}
+.mc.mcp:hover{border-color:rgba(45,143,255,.4);box-shadow:0 4px 20px rgba(45,143,255,.1);}
+.mc.mcp::before{background:radial-gradient(ellipse at left,rgba(45,143,255,.06),transparent 70%);}
+.mc-ico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.mc.mlan .mc-ico{background:var(--grd);}
+.mc.mqr .mc-ico{background:var(--a1d);}
+.mc.mcp .mc-ico{background:var(--bld);}
+.mc-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;}
+.mc-desc{font-size:12px;color:var(--t2);line-height:1.5;}
+.mc-tag{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;display:inline-block;margin-top:6px;}
+.mc.mlan .mc-tag{background:var(--grd);color:var(--gr);}
+.mc.mqr .mc-tag{background:var(--a1d);color:var(--a1);}
+.mc.mcp .mc-tag{background:var(--bld);color:var(--bl);}
+
+/* ─── LAN SCREEN ─── */
+.lan-box{margin:16px;padding:20px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);}
+.lan-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:10px;}
+.lan-ip{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gr);letter-spacing:1px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.lan-copy{font-size:11px;font-family:var(--mono);padding:4px 10px;border-radius:var(--rs);
+  background:var(--grd);color:var(--gr);border:1px solid rgba(31,207,106,.3);cursor:pointer;transition:all .15s;}
+.lan-copy:hover{background:rgba(31,207,106,.2);}
+.lan-ip-qr{display:flex;justify-content:center;margin:20px 0 10px;}
+.lan-ip-qr-inner{background:#fff;padding:12px;border-radius:10px;box-shadow:0 0 0 1px var(--b1);}
+.lan-info{font-size:12px;color:var(--t3);line-height:1.65;margin-top:14px;padding:12px;
+  background:rgba(31,207,106,.04);border:1px solid rgba(31,207,106,.15);border-radius:var(--rs);}
+.lan-info b{color:var(--gr);}
+.lan-divider{display:flex;align-items:center;gap:10px;margin:16px;font-size:11px;color:var(--t3);font-family:var(--mono);}
+.lan-divider::before,.lan-divider::after{content:'';flex:1;height:1px;background:var(--b1);}
+.lan-connect-box{margin:0 16px 16px;padding:18px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);}
+.lan-connect-label{font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5;}
+.lan-btn-note{font-size:11px;color:var(--t3);margin-top:8px;font-family:var(--mono);}
+
+/* ─── STEP FLOW ─── */
+.sflow{padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.sbox{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px;transition:border-color .2s;}
+.sbox.active{border-color:rgba(0,212,180,.3);}
+.sbox.done{border-color:rgba(31,207,106,.2);background:rgba(31,207,106,.03);}
+.snum{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:8px;}
+.stxt{font-size:13px;color:var(--t1);line-height:1.7;margin-bottom:14px;}
+.stxt b{color:var(--a1);}
+.salert{margin-top:10px;}
+
+/* ─── QR DISPLAY ─── */
+.qr-center{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 16px;}
+.qr-wrap{background:#fff;padding:14px;border-radius:12px;box-shadow:0 0 0 1px var(--b1),0 8px 24px rgba(0,0,0,.4);}
+.qr-caption{font-size:12px;color:var(--t3);text-align:center;font-family:var(--mono);line-height:1.6;}
+
+/* ─── QR SCANNER ─── */
+.scan-outer{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:24px 20px;gap:16px;overflow-y:auto;}
+.scan-video-wrap{position:relative;width:100%;max-width:320px;}
+#qrVideo{width:100%;border-radius:12px;background:#000;display:block;
+  border:2px solid var(--a1);box-shadow:0 0 24px rgba(0,212,180,.2);}
+.scan-corner{position:absolute;inset:0;pointer-events:none;}
+.scan-corner::before,.scan-corner::after{
+  content:'';position:absolute;width:20px;height:20px;
+  border-color:var(--a1);border-style:solid;border-radius:3px;}
+.scan-corner::before{top:8px;left:8px;border-width:3px 0 0 3px;}
+.scan-corner::after{bottom:8px;right:8px;border-width:0 3px 3px 0;}
+.scan-status{font-size:13px;color:var(--t2);font-family:var(--mono);text-align:center;padding:0 16px;}
+.scan-alt{font-size:12px;color:var(--t3);text-align:center;margin-top:4px;}
+.scan-alt span{color:var(--bl);text-decoration:underline;cursor:pointer;}
+
+/* ─── INPUTS ─── */
+.field{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r2);
+  color:var(--t1);font-family:var(--sans);font-size:14px;padding:11px 14px;
+  outline:none;transition:border-color .2s;}
+.field:focus{border-color:rgba(0,212,180,.3);}
+.field::placeholder{color:var(--t3);}
+textarea.field{resize:vertical;min-height:88px;font-family:var(--mono);font-size:11px;color:var(--a1);line-height:1.5;}
+
+/* ─── BUTTONS ─── */
+.btn{padding:10px 18px;border-radius:var(--r2);font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.btn:disabled{opacity:.3;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.btn-a{background:var(--a1);color:#000;}
+.btn-a:hover{background:#20e8c8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,212,180,.3);}
+.btn-b{background:var(--bl);color:#000;}
+.btn-b:hover{background:#5cabff;transform:translateY(-1px);box-shadow:0 4px 14px rgba(45,143,255,.3);}
+.btn-g{background:var(--gr);color:#000;}
+.btn-g:hover{background:#3ff07e;transform:translateY(-1px);box-shadow:0 4px 14px rgba(31,207,106,.3);}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--b1);}
+.btn-ghost:hover{border-color:var(--b2);color:var(--t1);}
+.btn-danger{background:transparent;color:var(--rd);border:1px solid rgba(255,61,90,.25);}
+.btn-danger:hover{background:var(--rdd);border-color:var(--rd);}
+.btn-sm{padding:7px 13px;font-size:12px;}
+.btn-full{width:100%;justify-content:center;}
+.brow{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ─── ALERT ─── */
+.alert{padding:9px 13px;border-radius:var(--rs);font-size:12px;font-family:var(--mono);line-height:1.5;}
+.alert-ok{background:var(--grd);border:1px solid rgba(31,207,106,.3);color:var(--gr);}
+.alert-err{background:var(--rdd);border:1px solid rgba(255,61,90,.3);color:var(--rd);}
+.alert-inf{background:var(--a1d);border:1px solid rgba(0,212,180,.2);color:var(--a1);}
+.alert-warn{background:var(--ord);border:1px solid rgba(255,140,66,.3);color:var(--or);}
+
+/* ─── TOGGLE ─── */
+.tog-row{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 16px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);cursor:pointer;margin:0 16px;}
+.tog-info{font-size:13px;color:var(--t1);}
+.tog-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+.tog{width:40px;height:22px;border-radius:11px;background:var(--b2);position:relative;transition:background .2s;flex-shrink:0;}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;}
+.tog.on{background:var(--a1);}
+.tog.on::after{transform:translateX(18px);}
+
+/* ─── CONN TYPE BADGE ─── */
+.ctbadge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.3px;border:1px solid;}
+.ctbadge .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.ctbadge.lan{color:var(--gr);border-color:rgba(31,207,106,.3);background:var(--grd);}
+.ctbadge.net{color:var(--or);border-color:rgba(255,140,66,.3);background:var(--ord);}
+.ctbadge.relay{color:var(--rd);border-color:rgba(255,61,90,.3);background:var(--rdd);}
+.ctbadge.chk{color:var(--t3);border-color:var(--b1);animation:fp .8s infinite alternate;}
+@keyframes fp{from{opacity:.4;}to{opacity:1;}}
+
+/* ─── CHAT ─── */
+.chat-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0;}
+.chat-hdr .back{background:transparent;border:none;color:var(--t2);font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:4px;}
+.chat-hdr .back:hover{color:var(--t1);}
+.cpeer{flex:1;min-width:0;}
+.cpeer-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;display:flex;align-items:center;gap:7px;}
+.cpeer-status{display:flex;align-items:center;gap:7px;}
+.ponline{font-size:11px;color:var(--gr);font-family:var(--mono);}
+
+.msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;
+  scrollbar-width:thin;scrollbar-color:var(--b2) transparent;}
+
+.msg{display:flex;flex-direction:column;max-width:76%;animation:mi .15s ease;}
+@keyframes mi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.msg.me{align-self:flex-end;align-items:flex-end;}
+.msg.them{align-self:flex-start;align-items:flex-start;}
+.bub{padding:9px 13px;border-radius:11px;font-size:14px;line-height:1.6;word-break:break-word;}
+.msg.me .bub{background:linear-gradient(135deg,rgba(0,212,180,.18),rgba(45,143,255,.1));
+  border:1px solid rgba(0,212,180,.18);border-bottom-right-radius:2px;}
+.msg.them .bub{background:var(--s2);border:1px solid var(--b1);border-bottom-left-radius:2px;}
+.mmeta{font-size:10px;color:var(--t3);font-family:var(--mono);margin-top:3px;padding:0 2px;}
+.msys{align-self:center;font-size:11px;color:var(--t3);font-family:var(--mono);
+  padding:3px 11px;background:rgba(0,0,0,.25);border-radius:20px;margin:3px 0;letter-spacing:.3px;}
+
+.fbub{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--s2);
+  border:1px solid var(--b1);border-radius:11px;min-width:200px;}
+.fico{font-size:24px;flex-shrink:0;}
+.finf{flex:1;min-width:0;}
+.fname{font-size:12px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.fsz{font-size:10px;color:var(--t3);font-family:var(--mono);}
+.fprog{height:2px;background:var(--b1);border-radius:1px;margin-top:5px;}
+.fprogb{height:100%;background:linear-gradient(90deg,var(--a1),var(--bl));transition:width .25s;border-radius:1px;}
+.fdl{padding:5px 9px;background:var(--a1);color:#000;border-radius:5px;font-size:11px;font-weight:700;text-decoration:none;flex-shrink:0;}
+
+.cinput{display:flex;align-items:flex-end;gap:9px;padding:11px 16px;border-top:1px solid var(--b1);background:var(--s1);flex-shrink:0;}
+#msgIn{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:22px;color:var(--t1);
+  font-family:var(--sans);font-size:14px;padding:10px 16px;outline:none;resize:none;
+  min-height:42px;max-height:110px;line-height:1.5;transition:border-color .2s;}
+#msgIn:focus{border-color:rgba(0,212,180,.25);}
+#msgIn::placeholder{color:var(--t3);}
+.sbtn{width:42px;height:42px;border-radius:50%;background:var(--a1);border:none;color:#000;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .15s;flex-shrink:0;}
+.sbtn:hover{background:#20e8c8;transform:scale(1.04);}
+.abtn{width:38px;height:38px;border-radius:50%;background:transparent;border:1px solid var(--b1);
+  color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .15s;flex-shrink:0;}
+.abtn:hover{border-color:var(--a1);color:var(--a1);}
+
+/* ─── MODAL ─── */
+.mover{position:fixed;inset:0;z-index:100;background:rgba(6,10,15,.88);backdrop-filter:blur(6px);
+  display:none;align-items:flex-end;justify-content:center;}
+.mover.open{display:flex;animation:mfade .2s ease;}
+@keyframes mfade{from{opacity:0;}to{opacity:1;}}
+.msheet{width:100%;max-width:500px;background:var(--s1);border-radius:18px 18px 0 0;
+  border-top:1px solid var(--b1);padding:22px 22px 36px;animation:mup .22s ease;max-height:92vh;overflow-y:auto;}
+@keyframes mup{from{transform:translateY(40%);}to{transform:translateY(0);}}
+.mhandle{width:38px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 18px;}
+.mtitle{font-size:17px;font-weight:700;color:#fff;margin-bottom:5px;}
+.msub{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:18px;}
+.mbtns{display:flex;flex-direction:column;gap:9px;}
+
+/* ─── TOAST ─── */
+#toasts{position:fixed;top:14px;right:14px;z-index:999;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);
+  padding:10px 15px;font-size:12px;font-family:var(--mono);color:var(--a1);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .22s ease;max-width:260px;}
+@keyframes tin{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
+
+/* ─── DROPZONE ─── */
+#dropzone{position:fixed;inset:0;z-index:200;background:rgba(6,10,15,.93);
+  border:3px dashed var(--a1);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#dropzone.show{display:flex;}
+.dztxt{font-family:var(--mono);font-size:16px;color:var(--a1);letter-spacing:3px;}
+</style>
+</head>
+<body>
+
+<div id="root">
+
+<!-- ══ HOME ══ -->
+<div id="pgHome" class="page on" style="position:relative">
+  <div class="appbar">
+    <div class="brand">
+      <svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+        <rect x="1" y="1" width="30" height="30" rx="8" stroke="rgba(0,212,180,.3)" stroke-width="1"/>
+        <circle cx="10" cy="16" r="4" fill="rgba(0,212,180,.15)" stroke="#00d4b4" stroke-width="1.5"/>
+        <circle cx="22" cy="16" r="4" fill="rgba(45,143,255,.12)" stroke="#2d8fff" stroke-width="1.5"/>
+        <path d="M14 14 L18 14 M14 18 L18 18" stroke="#00d4b4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 1.5"/>
+        <circle cx="10" cy="16" r="1.5" fill="#00d4b4"/>
+        <circle cx="22" cy="16" r="1.5" fill="#2d8fff"/>
+      </svg>
+      <div>
+        <div class="brand-name">ChatBSK</div>
+        <div class="brand-ver">P2P · LOCAL · OFFLINE</div>
+      </div>
+    </div>
+    <div class="myid" id="myIdBadge" title="ID-ul tău unic"></div>
+  </div>
+
+  <div id="noContacts" class="empty">
+    <div class="empty-ico">💬</div>
+    <div class="empty-h">Nicio conversație</div>
+    <div class="empty-p">Apasă <strong>+</strong> pentru a conecta un dispozitiv.<br>Conversațiile și contactele se salvează local.</div>
+  </div>
+  <div id="contactList" class="clist" style="display:none"></div>
+  <button class="fab" onclick="openNew()">＋</button>
+</div>
+
+<!-- ══ NEW CONNECTION ══ -->
+<div id="pgNew" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="go('pgHome')">←</button>
+    <div><div class="bar-title">Conexiune nouă</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <div style="padding:14px 16px 6px;font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;">
+      Metodă de conectare
+    </div>
+    <div class="methods">
+      <div class="mc mlan" onclick="openLan()">
+        <div class="mc-ico">🌐</div>
+        <div>
+          <div class="mc-name">Rețea Locală (LAN)</div>
+          <div class="mc-desc">Vede adresa ta IP pe rețea și generează un QR de conexiune pentru celălalt dispozitiv.</div>
+          <div class="mc-tag">RECOMANDAT · FĂRĂ INTERNET</div>
+        </div>
+      </div>
+      <div class="mc mqr" onclick="openModal('mQrRole')">
+        <div class="mc-ico">⬛</div>
+        <div>
+          <div class="mc-name">QR Code</div>
+          <div class="mc-desc">Schimb rapid de coduri QR între dispozitive. Necesită cameră foto.</div>
+          <div class="mc-tag">RAPID · CROSS-DEVICE</div>
+        </div>
+      </div>
+      <div class="mc mcp" onclick="openModal('mManRole')">
+        <div class="mc-ico">📋</div>
+        <div>
+          <div class="mc-name">Copy-Paste</div>
+          <div class="mc-desc">Schimb manual de coduri prin orice canal (email, SMS, etc.).</div>
+          <div class="mc-tag">FUNCȚIONEAZĂ ÎNTOTDEAUNA</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin:16px 16px 0;padding:12px 14px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);">
+      <div style="font-size:12px;color:var(--t3);line-height:1.65;">
+        💡 <b style="color:var(--t2)">Cum funcționează:</b> WebRTC stabilește o conexiune directă browser-to-browser — datele nu trec prin niciun server. Ai nevoie de un singur schimb de cod (QR sau text) pentru împerechere inițială.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LAN SCREEN ══ -->
+<div id="pgLan" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="go('pgNew')">←</button>
+    <div><div class="bar-title">Rețea Locală</div><div class="bar-sub">IP-UL TĂU PE LAN</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <!-- My IP -->
+    <div class="lan-box">
+      <div class="lan-label">Adresa ta pe rețeaua locală</div>
+      <div class="lan-ip">
+        <span id="myIpText">detectare...</span>
+        <button class="lan-copy" onclick="copyMyIp()">📋 Copiază</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:6px;font-family:var(--mono);">
+        Trimite această adresă celuilalt utilizator din rețea sau arată-i codul QR de mai jos.
+      </div>
+      <div class="lan-ip-qr"><div class="lan-ip-qr-inner" id="ipQrBox"></div></div>
+      <div class="lan-info">
+        <b>Cum te conectezi:</b><br>
+        1. Celălalt utilizator vede adresa ta IP<br>
+        2. Alege cine inițiază și cine răspunde<br>
+        3. Schimbați două coduri QR → gata!<br><br>
+        ⚠️ Descoperirea automată necesită o aplicație nativă (cum face LocalSend). Din browser pur, nu este posibil tehnic — browserele nu pot deschide porturi TCP server.
+      </div>
+    </div>
+    <div class="lan-divider">CONTINUĂ CU QR</div>
+    <div class="lan-connect-box">
+      <div class="lan-connect-label">Acum alege rolul tău pentru a stabili conexiunea WebRTC prin QR:</div>
+      <div class="brow">
+        <button class="btn btn-a" onclick="closeModal('mQrRole');startQrInit()">📡 Inițiator — Generez QR</button>
+        <button class="btn btn-b" onclick="closeModal('mQrRole');startQrResp()">📷 Destinatar — Scanez QR</button>
+      </div>
+      <div class="lan-btn-note">Inițiatorul generează primul QR. Destinatarul îl scanează.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR INITIATOR ══ -->
+<div id="pgQrInit" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="abort();go('pgNew')">←</button>
+    <div><div class="bar-title">QR — Inițiator</div><div class="bar-sub">PASUL 1 DIN 2</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <div class="sflow">
+      <div class="sbox active" id="qiS1">
+        <div class="snum">// Pasul 1 — Generează oferta</div>
+        <div class="stxt">Apasă butonul, <b>arată QR-ul</b> destinatarului. El îl scanează, îți arată un al doilea QR pe care tu îl scanezi.</div>
+        <button class="btn btn-a" onclick="genOfferQr()">⚡ Generează QR de ofertă</button>
+      </div>
+      <div id="qiS2" style="display:none">
+        <div class="sbox done">
+          <div class="snum">// Pasul 1 — Ofertă generată ✓</div>
+          <div class="qr-center">
+            <div class="qr-wrap" id="qrOfferBox"></div>
+            <div class="qr-caption">Arată acest cod destinatarului<br>el îl scanează cu butonul de mai jos</div>
+          </div>
+        </div>
+        <div class="sbox active" style="margin-top:12px">
+          <div class="snum">// Pasul 2 — Scanează răspunsul</div>
+          <div class="stxt">Odată ce destinatarul a scanat, el îți va arăta un <b>QR de răspuns</b>. Scanează-l:</div>
+          <button class="btn btn-g" onclick="startScan('answer-init')">📷 Scanează QR-ul de răspuns</button>
+        </div>
+      </div>
+      <div id="qiAlert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR RESPONDER ══ -->
+<div id="pgQrResp" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="abort();go('pgNew')">←</button>
+    <div><div class="bar-title">QR — Destinatar</div><div class="bar-sub">PASUL 1 DIN 2</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <div class="sflow">
+      <div class="sbox active" id="qrS1">
+        <div class="snum">// Pasul 1 — Scanează oferta</div>
+        <div class="stxt">Scanează codul QR afișat de inițiator.</div>
+        <button class="btn btn-a" onclick="startScan('offer-resp')">📷 Scanează QR-ul inițiatorului</button>
+      </div>
+      <div id="qrS2" style="display:none">
+        <div class="sbox done">
+          <div class="snum">// Pasul 1 — Ofertă scanată ✓</div>
+        </div>
+        <div class="sbox active" style="margin-top:12px">
+          <div class="snum">// Pasul 2 — Arată răspunsul</div>
+          <div class="stxt"><b>Arată-i inițiatorului</b> acest cod QR să îl scaneze el:</div>
+          <div class="qr-center">
+            <div class="qr-wrap" id="qrAnswerBox"></div>
+            <div class="qr-caption">Inițiatorul scanează acest cod →<br>conexiunea se stabilește automat</div>
+          </div>
+        </div>
+      </div>
+      <div id="qrAlert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR SCANNER ══ -->
+<div id="pgScan" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="stopScan()">✕</button>
+    <div><div class="bar-title">Scanare QR</div><div class="bar-sub" id="scanSubtitle">ÎNDREAPTĂ SPRE COD</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="scan-outer">
+    <div class="scan-video-wrap">
+      <video id="qrVideo" autoplay playsinline muted></video>
+      <div class="scan-corner"></div>
+    </div>
+    <canvas id="qrCanvas" style="display:none"></canvas>
+    <div class="scan-status" id="scanStatus">Pornire cameră...</div>
+    <div class="scan-alt">Probleme cu camera? <span onclick="showPasteModal()">Introdu codul manual</span></div>
+    <!-- manual paste fallback -->
+    <div id="scanFallback" style="display:none;width:100%;max-width:320px;">
+      <textarea class="field" id="pasteField" rows="4" placeholder="Lipește codul QR (text) aici..."></textarea>
+      <div class="brow" style="margin-top:8px">
+        <button class="btn btn-a" onclick="processPasted()">✓ Procesează</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MANUAL INIT ══ -->
+<div id="pgManInit" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="abort();go('pgNew')">←</button>
+    <div><div class="bar-title">Manual — Inițiator</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <div class="sflow">
+      <div class="sbox active" id="miS1">
+        <div class="snum">// Pasul 1</div>
+        <div class="stxt">Generează oferta și trimite codul destinatarului.</div>
+        <button class="btn btn-a" onclick="genOfferManual()">⚡ Generează ofertă</button>
+      </div>
+      <div id="miS2" style="display:none">
+        <div class="sbox done">
+          <div class="snum">// Pasul 2 — Trimite oferta</div>
+          <textarea class="field" id="offerOut" readonly onclick="this.select()" rows="4"></textarea>
+          <div class="brow" style="margin-top:9px"><button class="btn btn-a btn-sm" onclick="copyField('offerOut')">📋 Copiază</button></div>
+        </div>
+        <div class="sbox active" style="margin-top:12px">
+          <div class="snum">// Pasul 3 — Lipește răspunsul</div>
+          <textarea class="field" id="answerIn" rows="4" placeholder="Lipește codul de răspuns al destinatarului..."></textarea>
+          <div class="brow" style="margin-top:9px"><button class="btn btn-b" onclick="submitAnswerManual()">🔗 Conectează</button></div>
+        </div>
+      </div>
+      <div id="miAlert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MANUAL RESP ══ -->
+<div id="pgManResp" class="page">
+  <div class="bar">
+    <button class="ibtn" onclick="abort();go('pgNew')">←</button>
+    <div><div class="bar-title">Manual — Destinatar</div></div>
+    <div style="width:32px"></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+    <div class="sflow">
+      <div class="sbox active" id="mrS1">
+        <div class="snum">// Pasul 1 — Lipește oferta</div>
+        <textarea class="field" id="offerIn" rows="4" placeholder="Lipește oferta inițiatorului..."></textarea>
+        <div class="brow" style="margin-top:9px"><button class="btn btn-b" onclick="processOfferManual()">⚡ Generează răspuns</button></div>
+      </div>
+      <div id="mrS2" style="display:none">
+        <div class="sbox done">
+          <div class="snum">// Pasul 2 — Trimite răspunsul</div>
+          <textarea class="field" id="answerOut" readonly onclick="this.select()" rows="4"></textarea>
+          <div class="brow" style="margin-top:9px">
+            <button class="btn btn-a btn-sm" onclick="copyField('answerOut')">📋 Copiază</button>
+          </div>
+          <div style="font-size:12px;color:var(--t3);margin-top:10px;">Inițiatorul primește codul → conexiunea se face automat.</div>
+        </div>
+      </div>
+      <div id="mrAlert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div id="pgChat" class="page">
+  <div class="chat-hdr">
+    <button class="back" onclick="leaveChat()">←</button>
+    <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:var(--mono);flex-shrink:0;" id="chatAv"></div>
+    <div class="cpeer">
+      <div class="cpeer-name">
+        <span id="chatName">Peer</span>
+      </div>
+      <div class="cpeer-status">
+        <span class="ponline" id="chatOnline">● conectat</span>
+        <span class="ctbadge chk" id="ctBadge"><span class="dot"></span><span id="ctLabel">detectare...</span></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="ibtn" onclick="openRename()" title="Redenumește">✏️</button>
+      <button class="ibtn" onclick="leaveChat()" style="color:var(--rd)" title="Deconectează">✕</button>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div class="cinput">
+    <button class="abtn" onclick="document.getElementById('fileIn').click()">📎</button>
+    <textarea id="msgIn" placeholder="Scrie un mesaj..." rows="1" oninput="aResize(this)" onkeydown="onKey(event)"></textarea>
+    <button class="sbtn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+</div><!-- #root -->
+
+<!-- ── MODALS ── -->
+<div class="mover" id="mQrRole">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">Rol în conexiunea QR</div>
+    <div class="msub">Alegeți: unul generează QR-ul (inițiator), celălalt îl scanează (destinatar).</div>
+    <div class="mbtns">
+      <button class="btn btn-a btn-full" onclick="closeModal('mQrRole');startQrInit()">📡 Inițiator — Generez primul QR</button>
+      <button class="btn btn-b btn-full" onclick="closeModal('mQrRole');startQrResp()">📷 Destinatar — Scanez QR-ul</button>
+      <button class="btn btn-ghost btn-full" onclick="closeModal('mQrRole')">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<div class="mover" id="mManRole">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">Rol în conexiunea manuală</div>
+    <div class="msub">Inițiatorul generează primul cod și îl trimite destinatarului.</div>
+    <div class="mbtns">
+      <button class="btn btn-a btn-full" onclick="closeModal('mManRole');startManInit()">📡 Inițiator — Generez oferta</button>
+      <button class="btn btn-b btn-full" onclick="closeModal('mManRole');startManResp()">📋 Destinatar — Am o ofertă</button>
+      <button class="btn btn-ghost btn-full" onclick="closeModal('mManRole')">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<div class="mover" id="mRename">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle">Redenumește contactul</div>
+    <div class="msub">Schimbă cum apare în lista ta de conversații.</div>
+    <input class="field" id="renameIn" placeholder="Nume nou..." maxlength="40" style="margin-bottom:14px">
+    <div class="brow">
+      <button class="btn btn-a" style="flex:1" onclick="confirmRename()">✓ Salvează</button>
+      <button class="btn btn-ghost" onclick="closeModal('mRename')">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<div class="mover" id="mContactOpts">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="coName">Contact</div>
+    <div class="msub" id="coId"></div>
+    <div class="mbtns">
+      <button class="btn btn-ghost btn-full" onclick="closeModal('mContactOpts');openNew()">🔗 Reconectează</button>
+      <button class="btn btn-ghost btn-full" onclick="closeModal('mContactOpts');renameFromOpts()">✏️ Redenumește</button>
+      <button class="btn btn-danger btn-full" onclick="deleteContact()">🗑️ Șterge conversația</button>
+      <button class="btn btn-ghost btn-full" onclick="closeModal('mContactOpts')">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileIn" style="display:none" onchange="sendFile(this.files[0])">
+<div id="dropzone"><div style="font-size:48px">📁</div><div class="dztxt">ELIBEREAZĂ FIȘIERUL</div></div>
+<div id="toasts"></div>
+
+<!-- QR libs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/3.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ChatBSK — P2P Messenger  |  Single HTML File
+// ═══════════════════════════════════════════════════
+
+// ─── STORAGE ────────────────────────────────────────
+const DB = {
+  g: k => { try { return JSON.parse(localStorage.getItem('bsk_'+k)); } catch { return null; }},
+  s: (k,v) => localStorage.setItem('bsk_'+k, JSON.stringify(v)),
+  devId() {
+    let id = this.g('id');
+    if (!id) { id = 'bsk' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); this.s('id',id); }
+    return id;
+  },
+  contacts: () => DB.g('contacts') || [],
+  saveContacts: c => DB.s('contacts', c),
+  getContact: id => (DB.contacts().find(c=>c.id===id)||null),
+  upsert(c) {
+    const list = DB.contacts();
+    const i = list.findIndex(x=>x.id===c.id);
+    if (i>=0) list[i]={...list[i],...c}; else list.unshift(c);
+    DB.saveContacts(list);
+    return list.find(x=>x.id===c.id);
+  },
+  del(id) { DB.saveContacts(DB.contacts().filter(c=>c.id!==id)); DB.s('m_'+id,[]); },
+  msgs: id => DB.g('m_'+id) || [],
+  addMsg(cid, msg) {
+    const m = DB.msgs(cid); m.push(msg);
+    if (m.length>800) m.splice(0, m.length-800);
+    DB.s('m_'+cid, m);
+  }
+};
+
+// ─── GLOBALS ────────────────────────────────────────
+const MY_ID = DB.devId();
+let myName = DB.g('name') || '';
+let pc=null, dc=null;
+let activeCid=null;  // current contact id
+let connType=null, ctPoll=null;
+let lanMode = DB.g('lanmode')||false;
+let stream=null, rafId=null, scanCb=null, scanTarget=null;
+let fChunks={};
+const CHUNK=16384;
+
+// ─── BOOT ────────────────────────────────────────────
+document.getElementById('myIdBadge').textContent = MY_ID.slice(0,12);
+document.getElementById('myIdBadge').title = 'Tău ID: '+MY_ID;
+renderContacts();
+detectMyIp();
+
+if (!myName) {
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      const n = prompt('Cum te numești? (se salvează local)','');
+      myName = (n||'').trim()||'Utilizator';
+      DB.s('name', myName);
+    }, 400);
+  });
+}
+
+// ─── IP DETECTION ────────────────────────────────────
+function detectMyIp() {
+  const el = document.getElementById('myIpText');
+  try {
+    const tmp = new RTCPeerConnection({iceServers:[]});
+    tmp.createDataChannel('');
+    tmp.createOffer().then(o=>tmp.setLocalDescription(o));
+    tmp.onicecandidate = e => {
+      if (!e || !e.candidate) return;
+      const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (m && !m[1].startsWith('127.')) {
+        el.textContent = m[1];
+        tmp.close();
+        // Generate IP QR
+        const box = document.getElementById('ipQrBox');
+        box.innerHTML = '';
+        try {
+          new QRCode(box, { text:m[1], width:160, height:160,
+            colorDark:'#000000', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
+        } catch(e){}
+      }
+    };
+    setTimeout(()=>{ if(el.textContent==='detectare...') el.textContent='Nedisponibil (fără LAN)'; tmp.close(); }, 3000);
+  } catch { el.textContent='Nedisponibil'; }
+}
+
+function copyMyIp() {
+  const ip = document.getElementById('myIpText').textContent;
+  if (ip.includes('.')) {
+    navigator.clipboard.writeText(ip).then(()=>toast('IP copiat: '+ip)).catch(()=>toast('IP: '+ip));
+  }
+}
+
+// ─── NAVIGATION ──────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function openNew() { go('pgNew'); }
+function openLan() { detectMyIp(); go('pgLan'); }
+
+// ─── WEBRTC ──────────────────────────────────────────
+function mkPc() {
+  cleanup();
+  const ice = lanMode ? [] : [
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'}
+  ];
+  pc = new RTCPeerConnection({iceServers:ice});
+  pc.oniceconnectionstatechange = ()=>{
+    if (['disconnected','failed','closed'].includes(pc.iceConnectionState)) onDrop();
+  };
+  pc.ondatachannel = e => setupDc(e.channel);
+}
+
+function setupDc(ch) {
+  dc = ch;
+  dc.binaryType = 'arraybuffer';
+  dc.onopen = () => {
+    sendCtrl({type:'hello', name:myName, id:MY_ID});
+    onOpen();
+  };
+  dc.onclose = onDrop;
+  dc.onmessage = e => {
+    if (typeof e.data==='string') onCtrl(JSON.parse(e.data));
+    else onBin(e.data);
+  };
+}
+
+async function iceWait(p) {
+  return new Promise(res=>{
+    if (p.iceGatheringState==='complete') return res();
+    p.onicegatheringstatechange = ()=>{ if(p.iceGatheringState==='complete') res(); };
+    setTimeout(res, 6500);
+  });
+}
+
+function enc(sdp) { return LZString.compressToEncodedURIComponent(JSON.stringify(sdp)); }
+function dec(s) {
+  try { const r=JSON.parse(LZString.decompressFromEncodedURIComponent(s)); if(r&&r.type)return r; } catch{}
+  try { const r=JSON.parse(s); if(r&&r.type)return r; } catch{}
+  return null;
+}
+
+// ─── EVENTS ──────────────────────────────────────────
+function onOpen() {
+  stopScan();
+  go('pgChat');
+  startCtPoll();
+  toast('✓ Conectat!');
+}
+
+function onCtrl(msg) {
+  if (msg.type==='hello') {
+    const pid = msg.id||'unknown';
+    let c = DB.contacts().find(x=>x.deviceId===pid);
+    if (!c) {
+      c = { id:'c'+Date.now().toString(36), deviceId:pid, name:msg.name||'Peer',
+            customName:null, lastMsg:'', lastTime:'', ct:null };
+    }
+    activeCid = c.id;
+    DB.upsert(c);
+    const dn = c.customName||c.name;
+    setChatUI(dn, c.deviceId);
+    loadHistory(c.id);
+    sysMsg(msg.name+' s-a conectat');
+    renderContacts();
+  } else if (msg.type==='chat') {
+    addMsg(msg.text, false, msg.time);
+    if (activeCid) {
+      DB.addMsg(activeCid, {mine:false, text:msg.text, time:msg.time, type:'text'});
+      DB.upsert({id:activeCid, lastMsg:msg.text, lastTime:msg.time});
+      renderContacts();
+    }
+  } else if (msg.type==='file-meta') {
+    fChunks[msg.id]={meta:msg, chunks:[], got:0};
+    addFileMsg(msg, false);
+  }
+}
+
+function onDrop() {
+  stopCtPoll();
+  sysMsg('Conexiunea s-a întrerupt');
+  setCtBadge(null);
+  if (activeCid) { DB.upsert({id:activeCid,ct:null}); renderContacts(); }
+  document.getElementById('chatOnline').style.color='var(--rd)';
+  document.getElementById('chatOnline').textContent='● deconectat';
+}
+
+function cleanup() {
+  stopCtPoll(); stopScan();
+  if (dc){try{dc.close();}catch{} dc=null;}
+  if (pc){try{pc.close();}catch{} pc=null;}
+}
+
+function abort() { cleanup(); }
+
+// ─── CONNECTION TYPE ──────────────────────────────────
+async function detectCt() {
+  if (!pc) return null;
+  try {
+    const stats = await pc.getStats();
+    for (const [,r] of stats) {
+      if (r.type==='candidate-pair' && r.nominated) {
+        const lc = stats.get(r.localCandidateId);
+        if (!lc) continue;
+        if (lc.candidateType==='host') return 'lan';
+        if (lc.candidateType==='srflx') return 'net';
+        if (lc.candidateType==='relay') return 'relay';
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function setCtBadge(t) {
+  const b = document.getElementById('ctBadge');
+  const l = document.getElementById('ctLabel');
+  if (!b) return;
+  if (!t) { b.className='ctbadge chk'; l.textContent='detectare...'; connType=null; return; }
+  b.className='ctbadge '+t;
+  if (t==='lan') l.textContent='🟢 LAN Direct';
+  else if (t==='net') l.textContent='🌐 Internet NAT';
+  else if (t==='relay') l.textContent='🔴 Relay TURN';
+  connType=t;
+  if (activeCid) DB.upsert({id:activeCid, ct:t});
+  renderContacts();
+}
+
+function startCtPoll() {
+  setCtBadge(null);
+  ctPoll = setInterval(async()=>{
+    const t=await detectCt();
+    if (t&&t!==connType) setCtBadge(t);
+  }, 1200);
+}
+function stopCtPoll(){ clearInterval(ctPoll); ctPoll=null; }
+
+// ─── QR FLOWS ────────────────────────────────────────
+function startQrInit() {
+  mkPc();
+  dc = pc.createDataChannel('chat');
+  dc.binaryType='arraybuffer';
+  setupDc(dc);
+  document.getElementById('qiS1').style.display='block';
+  document.getElementById('qiS2').style.display='none';
+  document.getElementById('qrOfferBox').innerHTML='';
+  document.getElementById('qiAlert').innerHTML='';
+  go('pgQrInit');
+}
+
+async function genOfferQr() {
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await iceWait(pc);
+    const encoded = enc(pc.localDescription);
+    if (encoded.length > 2900) {
+      setAlert('qiAlert','warn','⚠️ Codul e mare — poate fi dificil de scanat. Folosiți Copy-Paste dacă scanarea eșuează.');
+    }
+    document.getElementById('qiS1').style.display='none';
+    document.getElementById('qiS2').style.display='block';
+    document.getElementById('qrOfferBox').innerHTML='';
+    mkQr('qrOfferBox', encoded);
+    setAlert('qiAlert','ok','✓ QR generat. Arată-l destinatarului.');
+  } catch(e){ setAlert('qiAlert','err','Eroare: '+e.message); }
+}
+
+function startQrResp() {
+  mkPc();
+  document.getElementById('qrS1').style.display='block';
+  document.getElementById('qrS2').style.display='none';
+  document.getElementById('qrAnswerBox').innerHTML='';
+  document.getElementById('qrAlert').innerHTML='';
+  go('pgQrResp');
+}
+
+// ─── QR SCANNER ──────────────────────────────────────
+// scanTarget: 'offer-resp' | 'answer-init'
+function startScan(target) {
+  scanTarget = target;
+  document.getElementById('scanStatus').textContent='Pornire cameră...';
+  document.getElementById('scanFallback').style.display='none';
+  document.getElementById('pasteField').value='';
+  document.getElementById('scanSubtitle').textContent =
+    target==='offer-resp' ? 'SCANEAZĂ OFERTA' : 'SCANEAZĂ RĂSPUNSUL';
+  go('pgScan');
+
+  // Only request camera here — NEVER before this point
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('scanStatus').textContent='❌ Camera nu este disponibilă în acest browser/protocol.';
+    document.getElementById('scanFallback').style.display='block';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } })
+    .then(s=>{
+      stream = s;
+      const v = document.getElementById('qrVideo');
+      v.srcObject = s;
+      v.play().then(()=>{ document.getElementById('scanStatus').textContent='🔍 Caută cod QR...'; tickScan(); })
+               .catch(e=>{ document.getElementById('scanStatus').textContent='❌ Nu pot porni videoul: '+e.message; });
+    })
+    .catch(e=>{
+      let msg;
+      if (e.name==='NotAllowedError'||e.name==='PermissionDeniedError')
+        msg='❌ Accesul la cameră a fost refuzat. Permite accesul în browser sau folosește varianta manuală de mai jos.';
+      else if (e.name==='NotFoundError')
+        msg='❌ Nu s-a găsit nicio cameră pe acest dispozitiv.';
+      else if (e.name==='NotSupportedError'||location.protocol==='file:')
+        msg='❌ Camera nu funcționează pe file:// în unele browsere. Servește fișierul via HTTP sau folosește varianta manuală.';
+      else
+        msg='❌ Eroare cameră: '+e.message;
+      document.getElementById('scanStatus').textContent=msg;
+      document.getElementById('scanFallback').style.display='block';
+    });
+}
+
+function tickScan() {
+  const v=document.getElementById('qrVideo'), c=document.getElementById('qrCanvas');
+  if (!stream||!v||!c) return;
+  const ctx=c.getContext('2d');
+  function tick(){
+    if (!stream) return;
+    if (v.readyState===v.HAVE_ENOUGH_DATA && v.videoWidth>0) {
+      c.width=v.videoWidth; c.height=v.videoHeight;
+      ctx.drawImage(v,0,0);
+      const img=ctx.getImageData(0,0,c.width,c.height);
+      const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+      if (code&&code.data){ stopScan(); processScanResult(code.data); return; }
+    }
+    rafId=requestAnimationFrame(tick);
+  }
+  rafId=requestAnimationFrame(tick);
+}
+
+function stopScan(goBack=false) {
+  if (rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  if (stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  if (goBack) {
+    if (scanTarget==='offer-resp') go('pgQrResp');
+    else if (scanTarget==='answer-init') go('pgQrInit');
+    else go('pgNew');
+  }
+}
+
+function showPasteModal() {
+  document.getElementById('scanFallback').style.display='block';
+}
+
+function processPasted() {
+  const val = document.getElementById('pasteField').value.trim();
+  if (!val) return;
+  stopScan();
+  processScanResult(val);
+}
+
+async function processScanResult(data) {
+  const sdp = dec(data);
+  if (!sdp){ toast('❌ Cod invalid sau corupt.'); return; }
+
+  if (scanTarget==='offer-resp') {
+    // Responder got initiator's offer
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await iceWait(pc);
+      const encoded = enc(pc.localDescription);
+      document.getElementById('qrS1').style.display='none';
+      document.getElementById('qrS2').style.display='block';
+      document.getElementById('qrAnswerBox').innerHTML='';
+      mkQr('qrAnswerBox', encoded);
+      go('pgQrResp');
+      setAlert('qrAlert','ok','✓ Răspuns generat. Arată QR-ul inițiatorului.');
+    } catch(e){ go('pgQrResp'); setAlert('qrAlert','err','Eroare: '+e.message); }
+
+  } else if (scanTarget==='answer-init') {
+    // Initiator scanned responder's answer
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      go('pgQrInit');
+      setAlert('qiAlert','inf','⏳ Conectare...');
+    } catch(e){ go('pgQrInit'); setAlert('qiAlert','err','Eroare: '+e.message); }
+  }
+}
+
+// ─── MANUAL FLOWS ────────────────────────────────────
+function startManInit() {
+  mkPc();
+  dc=pc.createDataChannel('chat'); dc.binaryType='arraybuffer'; setupDc(dc);
+  el('miS1').style.display='block'; el('miS2').style.display='none'; el('miAlert').innerHTML='';
+  go('pgManInit');
+}
+async function genOfferManual() {
+  try {
+    const o=await pc.createOffer(); await pc.setLocalDescription(o); await iceWait(pc);
+    el('offerOut').value=enc(pc.localDescription);
+    el('miS1').style.display='none'; el('miS2').style.display='block';
+    setAlert('miAlert','ok','✓ Ofertă generată.');
+  } catch(e){ setAlert('miAlert','err',e.message); }
+}
+async function submitAnswerManual() {
+  const raw=el('answerIn').value.trim();
+  if (!raw) return setAlert('miAlert','err','Lipește răspunsul mai întâi!');
+  const sdp=dec(raw); if(!sdp) return setAlert('miAlert','err','Cod invalid.');
+  try { await pc.setRemoteDescription(new RTCSessionDescription(sdp)); setAlert('miAlert','inf','⏳ Conectare...'); }
+  catch(e){ setAlert('miAlert','err',e.message); }
+}
+
+function startManResp() {
+  mkPc();
+  el('mrS1').style.display='block'; el('mrS2').style.display='none'; el('mrAlert').innerHTML=''; el('offerIn').value='';
+  go('pgManResp');
+}
+async function processOfferManual() {
+  const raw=el('offerIn').value.trim();
+  if (!raw) return setAlert('mrAlert','err','Lipește oferta mai întâi!');
+  const sdp=dec(raw); if(!sdp) return setAlert('mrAlert','err','Cod invalid.');
+  try {
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const a=await pc.createAnswer(); await pc.setLocalDescription(a); await iceWait(pc);
+    el('answerOut').value=enc(pc.localDescription);
+    el('mrS1').style.display='none'; el('mrS2').style.display='block';
+    setAlert('mrAlert','ok','✓ Răspuns generat. Trimite-l inițiatorului.');
+  } catch(e){ setAlert('mrAlert','err',e.message); }
+}
+
+// ─── CHAT ────────────────────────────────────────────
+function setChatUI(name, devId) {
+  el('chatName').textContent=name;
+  el('chatAv').textContent=name[0].toUpperCase();
+  el('chatAv').style.background='linear-gradient(135deg,'+colorFromStr(devId)+')';
+  el('chatOnline').style.color='var(--gr)';
+  el('chatOnline').textContent='● conectat';
+}
+
+function openContactChat(cid) {
+  const c=DB.getContact(cid); if(!c) return;
+  activeCid=cid;
+  const dn=c.customName||c.name;
+  setChatUI(dn, c.deviceId||c.id);
+  if (c.ct) setCtBadge(c.ct); else setCtBadge(null);
+  loadHistory(cid);
+  go('pgChat');
+  // Show offline hint if not connected to this contact
+  if (!dc||dc.readyState!=='open') {
+    sysMsg('Offline — apasă ← și reconectează prin +');
+  }
+}
+
+function loadHistory(cid) {
+  const box=el('msgs'); box.innerHTML='';
+  DB.msgs(cid).forEach(m=>{
+    if(m.type==='text') addMsg(m.text,m.mine,m.time,false);
+    else if(m.type==='file') addFileMsgHist(m);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+
+function sendMsg() {
+  const inp=el('msgIn'); const text=inp.value.trim();
+  if (!text) return;
+  if (!dc||dc.readyState!=='open'){ toast('Nu ești conectat!'); return; }
+  const time=now();
+  sendCtrl({type:'chat',text,time});
+  addMsg(text,true,time);
+  if(activeCid){ DB.addMsg(activeCid,{mine:true,text,time,type:'text'}); DB.upsert({id:activeCid,lastMsg:text,lastTime:time}); renderContacts(); }
+  inp.value=''; inp.style.height='auto';
+}
+
+function addMsg(text,mine,time,scroll=true) {
+  const box=el('msgs');
+  const d=document.createElement('div'); d.className='msg '+(mine?'me':'them');
+  d.innerHTML=`<div class="bub">${esc(text)}</div><div class="mmeta">${time}</div>`;
+  box.appendChild(d);
+  if(scroll) box.scrollTop=box.scrollHeight;
+}
+
+function sysMsg(text) {
+  const box=el('msgs'); if(!box) return;
+  const d=document.createElement('div'); d.className='msys'; d.textContent=text;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+
+function sendCtrl(obj){ if(dc&&dc.readyState==='open') dc.send(JSON.stringify(obj)); }
+
+function leaveChat() { cleanup(); activeCid=null; renderContacts(); go('pgHome'); }
+
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+function aResize(e){ e.style.height='auto'; e.style.height=Math.min(e.scrollHeight,110)+'px'; }
+
+// ─── FILES ───────────────────────────────────────────
+function sendFile(file) {
+  if(!file) return;
+  if(!dc||dc.readyState!=='open'){ toast('Nu ești conectat!'); return; }
+  if(file.size>50*1024*1024){ toast('Max 50MB'); return; }
+  const id=Math.random().toString(36).slice(2,10);
+  const meta={type:'file-meta',id,name:file.name,size:file.size,mime:file.type||'application/octet-stream'};
+  sendCtrl(meta); addFileMsg(meta,true);
+  if(activeCid) DB.addMsg(activeCid,{type:'file',id,name:file.name,size:file.size,mine:true});
+  let off=0,ci=0;
+  function next(){
+    if(off>=file.size) return;
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      const chunk=ev.target.result;
+      const idb=new Uint8Array(16); for(let i=0;i<id.length&&i<16;i++) idb[i]=id.charCodeAt(i);
+      const hdr=new ArrayBuffer(20); new Uint8Array(hdr).set(idb); new DataView(hdr).setUint32(16,ci);
+      const pkt=new Uint8Array(20+chunk.byteLength); pkt.set(new Uint8Array(hdr)); pkt.set(new Uint8Array(chunk),20);
+      dc.send(pkt.buffer); off+=CHUNK; ci++;
+      setBar(id,Math.min(off/file.size,1));
+      if(off<file.size) setTimeout(next,5);
+    };
+    fr.readAsArrayBuffer(file.slice(off,off+CHUNK));
+  }
+  next(); el('fileIn').value='';
+}
+
+function onBin(data) {
+  const view=new DataView(data);
+  const idb=new Uint8Array(data,0,16);
+  const id=String.fromCharCode(...idb).replace(/\0/g,'');
+  const ci=view.getUint32(16); const chunk=data.slice(20);
+  if(!fChunks[id]) return;
+  const ft=fChunks[id]; ft.chunks[ci]=chunk; ft.got+=chunk.byteLength;
+  setBar(id,ft.got/ft.meta.size);
+  if(ft.got>=ft.meta.size){
+    const blob=new Blob(ft.chunks,{type:ft.meta.mime});
+    enableDl(id,blob,ft.meta.name);
+    if(activeCid) DB.addMsg(activeCid,{type:'file',id,name:ft.meta.name,size:ft.meta.size,mine:false});
+    delete fChunks[id]; toast('📁 Fișier primit: '+ft.meta.name);
+  }
+}
+
+function addFileMsg(meta,mine){
+  const box=el('msgs');
+  const d=document.createElement('div'); d.className='msg '+(mine?'me':'them'); d.id='fm_'+meta.id;
+  d.innerHTML=`<div class="fbub"><div class="fico">${fIco(meta.name)}</div>
+    <div class="finf"><div class="fname">${esc(meta.name)}</div><div class="fsz">${fSz(meta.size)}</div>
+    <div class="fprog"><div class="fprogb" id="fp_${meta.id}" style="width:0%"></div></div></div>
+    <div id="fa_${meta.id}"></div></div>`;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function addFileMsgHist(m){
+  const box=el('msgs');
+  const d=document.createElement('div'); d.className='msg '+(m.mine?'me':'them');
+  d.innerHTML=`<div class="fbub"><div class="fico">${fIco(m.name)}</div>
+    <div class="finf"><div class="fname">${esc(m.name)}</div>
+    <div class="fsz">${fSz(m.size)} · ${m.mine?'trimis':'primit'}</div></div></div>`;
+  box.appendChild(d);
+}
+function setBar(id,p){ const b=el('fp_'+id); if(b) b.style.width=(p*100)+'%'; }
+function enableDl(id,blob,name){
+  const c=el('fa_'+id); if(!c) return;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  a.className='fdl'; a.textContent='⬇'; c.appendChild(a); setBar(id,1);
+}
+
+// ─── CONTACTS ────────────────────────────────────────
+function renderContacts(){
+  const list=DB.contacts();
+  el('noContacts').style.display=list.length?'none':'flex';
+  el('contactList').style.display=list.length?'block':'none';
+  el('contactList').innerHTML=list.map(c=>{
+    const name=c.customName||c.name;
+    const badge=c.ct||'off';
+    return `<div class="citem" onclick="openContactChat('${c.id}')" oncontextmenu="openCOpts(event,'${c.id}');return false">
+      <div class="cav" style="background:linear-gradient(135deg,${colorFromStr(c.deviceId||c.id)})">
+        ${name[0].toUpperCase()}
+        <div class="cav-badge ${badge}"></div>
+      </div>
+      <div class="cbody">
+        <div class="cname">${esc(name)}</div>
+        <div class="cprev">${esc(c.lastMsg||'Nicio conversație')}</div>
+      </div>
+      <div class="cmeta"><div class="ctime">${c.lastTime||''}</div></div>
+    </div>`;
+  }).join('');
+}
+
+let coTarget=null;
+function openCOpts(e,cid){ e.preventDefault(); coTarget=cid; const c=DB.getContact(cid); if(!c)return;
+  el('coName').textContent=c.customName||c.name; el('coId').textContent='ID: '+(c.deviceId||'').slice(0,20);
+  openModal('mContactOpts'); }
+function renameFromOpts(){ closeModal('mContactOpts'); activeCid=coTarget; openRename(); }
+function deleteContact(){
+  if(!coTarget) return; DB.del(coTarget); closeModal('mContactOpts'); renderContacts(); toast('Conversație ștearsă'); }
+
+// ─── RENAME ──────────────────────────────────────────
+function openRename(){
+  const c=DB.getContact(activeCid); if(!c) return;
+  el('renameIn').value=c.customName||c.name;
+  openModal('mRename');
+  setTimeout(()=>el('renameIn').focus(),300);
+}
+function confirmRename(){
+  const v=el('renameIn').value.trim(); if(!v||!activeCid) return;
+  DB.upsert({id:activeCid,customName:v});
+  const c=DB.getContact(activeCid);
+  if(c){ el('chatName').textContent=v; el('chatAv').textContent=v[0].toUpperCase(); }
+  closeModal('mRename'); renderContacts(); toast('Contact redenumit: '+v);
+}
+
+// ─── MODALS ──────────────────────────────────────────
+function openModal(id){ el(id).classList.add('open'); }
+function closeModal(id){ el(id).classList.remove('open'); }
+document.querySelectorAll('.mover').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+// ─── QR HELPER ───────────────────────────────────────
+function mkQr(boxId, text){
+  const box=el(boxId); box.innerHTML='';
+  // chunk size warning
+  const size = text.length <= 1200 ? 200 : text.length <= 2000 ? 220 : 240;
+  try {
+    new QRCode(box, {text, width:size, height:size, colorDark:'#000000', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.L });
+  } catch(e){ box.innerHTML='<div style="color:red;padding:10px;font-size:12px">QR prea mare. Folosiți Copy-Paste.</div>'; }
+}
+
+// ─── UTILS ───────────────────────────────────────────
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function now(){ return new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}); }
+function fSz(b){ if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB'; return(b/1048576).toFixed(1)+'MB'; }
+function fIco(n){ const e=n.split('.').pop().toLowerCase();
+  return {pdf:'📄',jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🖼',webp:'🖼',mp4:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',
+    zip:'📦',rar:'📦',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',txt:'📃',js:'💾',py:'💾',html:'💾'}[e]||'📁'; }
+function colorFromStr(s){ let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h);
+  return `hsl(${h%360},50%,38%),hsl(${(h+70)%360},55%,52%)`; }
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  el('toasts').appendChild(t); setTimeout(()=>t.remove(),2600); }
+function setAlert(id,type,msg){ el(id).innerHTML=`<div class="alert alert-${type}">${msg}</div>`; }
+function copyField(id){ const e=el(id); e.select();
+  navigator.clipboard.writeText(e.value).then(()=>toast('✓ Copiat!')).catch(()=>{ document.execCommand('copy'); toast('✓ Copiat!'); }); }
+
+// ─── DRAG & DROP ────────────────────────────────────
+document.addEventListener('dragover',e=>{ e.preventDefault(); if(dc?.readyState==='open') el('dropzone').classList.add('show'); });
+document.addEventListener('dragleave',e=>{ if(!e.relatedTarget) el('dropzone').classList.remove('show'); });
+document.addEventListener('drop',e=>{ e.preventDefault(); el('dropzone').classList.remove('show'); const f=e.dataTransfer.files[0]; if(f)sendFile(f); });
+</script>
+</body>
+</html>
