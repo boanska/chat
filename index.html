@@ -717,6 +717,94 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 }
 .enc-password-row.show{display:block;}
 
+/* ─── SIGNALING UX ─── */
+.code-display-wrap{
+  position:relative;
+  margin-bottom:8px;
+}
+
+.code-textarea{
+  width:100%;
+  background:#060a10;
+  border:1px solid var(--border2);
+  border-radius:var(--r-sm);
+  color:#4ade80;
+  font-family:var(--mono);
+  font-size:12px;
+  padding:12px;
+  resize:none;
+  outline:none;
+  line-height:1.5;
+  letter-spacing:.3px;
+  transition:border-color .18s;
+  word-break:break-all;
+}
+.code-textarea:focus{border-color:var(--accent);}
+.code-textarea::placeholder{color:var(--text3);font-size:12px;}
+
+.code-size-badge{
+  display:inline-block;
+  font-size:10px;
+  font-family:var(--mono);
+  color:var(--teal);
+  background:var(--teal-dim);
+  border:1px solid rgba(20,184,166,.25);
+  border-radius:4px;
+  padding:2px 8px;
+  margin-bottom:6px;
+}
+
+.code-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-top:8px;
+  flex-wrap:wrap;
+}
+
+.session-badge{
+  font-size:10px;
+  font-family:var(--mono);
+  color:var(--text3);
+  padding:3px 8px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+
+.paste-field-wrap{
+  position:relative;
+  display:flex;
+  gap:6px;
+  align-items:flex-start;
+}
+
+.paste-field-wrap .code-textarea{flex:1;}
+
+.paste-btn{
+  width:38px;
+  height:38px;
+  border-radius:var(--r-sm);
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  color:var(--text2);
+  cursor:pointer;
+  font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:all .18s;
+  margin-top:0;
+  padding:0;
+}
+.paste-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.auto-paste-hint{
+  font-size:11px;
+  color:var(--teal);
+  font-style:normal;
+  opacity:.8;
+}
+
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -851,8 +939,8 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 <div class="modal-overlay" id="new-conn-modal">
   <div class="modal">
     <div id="nc-initiator-view">
-      <div class="modal-title">📡 Adaugă contact — Tu ești Inițiator</div>
-      <div class="modal-sub">Generezi un cod de ofertă și îl trimiți celeilalte persoane prin orice canal (SMS, email, etc.).</div>
+      <div class="modal-title">📡 Conectare — Tu ești Inițiator</div>
+      <div class="modal-sub">Trimiți codul de ofertă, aștepți răspunsul. Codul e scurt (~500 car.) — merge prin SMS, email, orice.</div>
       <div class="steps">
         <div class="step-dot active" id="nc-dot1"></div>
         <div class="step-dot" id="nc-dot2"></div>
@@ -860,9 +948,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nc-s1">
-        <div class="instr"><b>Pasul 1:</b> Apasă butonul pentru a genera codul de ofertă.</div>
+        <div class="instr"><b>Pasul 1:</b> Generează codul de ofertă comprimat.</div>
         <div class="btn-row">
-          <button class="btn btn-primary" onclick="genOffer()">⚡ Generează ofertă</button>
+          <button class="btn btn-primary" id="gen-offer-btn" onclick="genOffer()">⚡ Generează ofertă</button>
           <button class="btn btn-ghost" onclick="switchRole()">Schimbă rol →</button>
           <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
         </div>
@@ -870,47 +958,57 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nc-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Copiază și trimite codul de mai jos celeilalte persoane.</div>
-        <div class="form-group">
-          <label>Codul tău de ofertă</label>
-          <textarea id="offer-out" rows="5" readonly onclick="this.select()"></textarea>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="copyText('offer-out', 'nc-alert2')">📋 Copiază</button>
-        </div>
-        <div style="margin-top:18px">
-          <div class="instr"><b>Pasul 3:</b> Odată ce cealaltă persoană ți-a trimis <b>răspunsul</b>, lipește-l aici:</div>
-          <div class="form-group">
-            <label>Răspunsul primit</label>
-            <textarea id="answer-in" rows="5" placeholder="Lipește răspunsul primit…"></textarea>
+        <div class="instr"><b>Pasul 2:</b> Trimite codul de mai jos celeilalte persoane.</div>
+        <div class="code-display-wrap">
+          <div class="code-size-badge" id="offer-size-badge"></div>
+          <textarea id="offer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
+          <div class="code-actions">
+            <button class="btn btn-primary" onclick="copyCode('offer-out','nc-alert2')">📋 Copiază codul</button>
+            <button class="btn btn-ghost" onclick="copyAsLink('nc-alert2')">🔗 Copiază ca link</button>
+            <span class="session-badge">💾 salvat automat</span>
           </div>
-          <div class="form-group">
+        </div>
+        <div id="nc-alert2"></div>
+        <div style="margin-top:18px">
+          <div class="instr"><b>Pasul 3:</b> Când primești <b>răspunsul</b>, lipește-l mai jos.
+            <span class="auto-paste-hint"> Apasă câmpul — auto-paste din clipboard ↓</span>
+          </div>
+          <div class="paste-field-wrap">
+            <textarea id="answer-in" class="code-textarea" rows="4"
+              placeholder="Lipește răspunsul primit… (auto-paste la focus)"
+              onfocus="tryAutoPaste(this,'nc-alert3')"></textarea>
+            <button class="paste-btn" onclick="manualPaste('answer-in','nc-alert3')" title="Lipește din clipboard">📋</button>
+          </div>
+          <div id="nc-alert3"></div>
+          <div class="form-group" style="margin-top:12px">
             <label>Numele contactului (opțional)</label>
             <input type="text" id="nc-contact-name" placeholder="ex: Maria">
           </div>
-          <div class="btn-row">
-            <button class="btn btn-teal" onclick="submitAnswer()">🔗 Conectează</button>
-          </div>
-          <div id="nc-alert2"></div>
+          <div class="btn-row"><button class="btn btn-teal" onclick="submitAnswer()">🔗 Conectează</button></div>
         </div>
       </div>
     </div>
 
     <div id="nc-responder-view" style="display:none">
-      <div class="modal-title">🔗 Adaugă contact — Tu ești Destinatar</div>
-      <div class="modal-sub">Ai primit un cod de ofertă. Lipește-l, generează răspunsul și trimite-l înapoi.</div>
+      <div class="modal-title">🔗 Conectare — Tu ești Destinatar</div>
+      <div class="modal-sub">Ai primit un cod scurt. Lipește-l, generezi un răspuns, trimiți înapoi. Gata.</div>
       <div class="steps">
         <div class="step-dot active" id="nr-dot1"></div>
         <div class="step-dot" id="nr-dot2"></div>
+        <div class="step-dot" id="nr-dot3"></div>
       </div>
 
       <div id="nr-s1">
-        <div class="instr"><b>Pasul 1:</b> Lipește codul de ofertă primit de la Inițiator.</div>
-        <div class="form-group">
-          <label>Oferta primită</label>
-          <textarea id="offer-in" rows="5" placeholder="Lipește oferta Inițiatorului…"></textarea>
+        <div class="instr"><b>Pasul 1:</b> Lipește codul primit de la Inițiator.
+          <span class="auto-paste-hint"> Apasă câmpul — auto-paste din clipboard ↓</span>
         </div>
-        <div class="btn-row">
+        <div class="paste-field-wrap">
+          <textarea id="offer-in" class="code-textarea" rows="4"
+            placeholder="Lipește codul primit… (auto-paste la focus)"
+            onfocus="tryAutoPaste(this,'nr-alert1')"></textarea>
+          <button class="paste-btn" onclick="manualPaste('offer-in','nr-alert1')" title="Lipește din clipboard">📋</button>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
           <button class="btn btn-primary" onclick="processOffer()">⚡ Generează răspuns</button>
           <button class="btn btn-ghost" onclick="switchRole()">Schimbă rol →</button>
           <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
@@ -919,19 +1017,23 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nr-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Copiază răspunsul și trimite-l Inițiatorului. Aștepți conexiunea…</div>
-        <div class="form-group">
-          <label>Răspunsul tău</label>
-          <textarea id="answer-out" rows="5" readonly onclick="this.select()"></textarea>
+        <div class="instr"><b>Pasul 2:</b> Trimite răspunsul Inițiatorului, apoi conexiunea se face automat.</div>
+        <div class="code-display-wrap">
+          <div class="code-size-badge" id="answer-size-badge"></div>
+          <textarea id="answer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
+          <div class="code-actions">
+            <button class="btn btn-primary" onclick="copyCode('answer-out','nr-alert2')">📋 Copiază răspunsul</button>
+            <span class="session-badge">💾 salvat automat</span>
+          </div>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin-top:12px">
           <label>Numele contactului (opțional)</label>
           <input type="text" id="nr-contact-name" placeholder="ex: Ion">
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="copyText('answer-out', 'nr-alert2')">📋 Copiază răspunsul</button>
-        </div>
         <div id="nr-alert2"></div>
+        <div class="instr" style="margin-top:10px;border-left-color:var(--teal);font-size:12px">
+          ⏳ Aștepți ca Inițiatorul să proceseze răspunsul. Dacă dai reload, răspunsul e salvat automat.
+        </div>
       </div>
     </div>
   </div>
@@ -1022,6 +1124,7 @@ let currentContactId = null;
 let connectionType = 'checking'; // 'lan' | 'internet' | 'checking'
 let pendingContactId = null; // contact id during signaling
 let pendingRole = null;      // 'initiator' | 'responder'
+let pendingStep = 0;         // signaling step for session restore
 
 const CHUNK = 16 * 1024;
 let fileChunks = {};
@@ -1036,6 +1139,14 @@ function init() {
   }
   document.getElementById('display-myname').textContent = myName;
   renderContactList();
+
+  // Check URL hash for pre-loaded offer
+  checkURLHash();
+
+  // Restore any pending signaling session from before reload
+  if (!location.hash.startsWith('#O:')) {
+    restorePendingSession();
+  }
 
   // Ask for name if default
   if (myName === 'Utilizator') setTimeout(openProfileModal, 600);
@@ -1212,10 +1323,213 @@ function updateConnBadge() {
 }
 
 // ══════════════════════════════════════════
+// SDP COMPRESSION (deflate-raw via CompressionStream)
+// Reduces ~3000 chars JSON → ~400-550 chars base64url
+// Falls back to raw JSON on old browsers
+// ══════════════════════════════════════════
+const SUPPORTS_COMPRESSION = typeof CompressionStream !== 'undefined';
+
+async function compressSDP(sdpObj) {
+  const json = JSON.stringify(sdpObj);
+  if (!SUPPORTS_COMPRESSION) return btoa(json).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const cs = new CompressionStream('deflate-raw');
+  const writer = cs.writable.getWriter();
+  writer.write(new TextEncoder().encode(json));
+  writer.close();
+  const chunks = [];
+  const reader = cs.readable.getReader();
+  for (;;) { const {done,value} = await reader.read(); if (done) break; chunks.push(value); }
+  const total = chunks.reduce((s,c)=>s+c.length,0);
+  const buf = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { buf.set(c,off); off+=c.length; }
+  return btoa(String.fromCharCode(...buf)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function decompressSDP(str) {
+  // Try compressed first, fall back to raw JSON (backward compat)
+  try {
+    const b64 = str.trim().replace(/-/g,'+').replace(/_/g,'/');
+    const bin = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+    if (!SUPPORTS_COMPRESSION) return JSON.parse(new TextDecoder().decode(bin));
+    const ds = new DecompressionStream('deflate-raw');
+    const w = ds.writable.getWriter();
+    w.write(bin); w.close();
+    const chunks = [];
+    const r = ds.readable.getReader();
+    for (;;) { const {done,value} = await r.read(); if (done) break; chunks.push(value); }
+    const total = chunks.reduce((s,c)=>s+c.length,0);
+    const buf = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) { buf.set(c,off); off+=c.length; }
+    return JSON.parse(new TextDecoder().decode(buf));
+  } catch {
+    // Fallback: try raw JSON
+    return JSON.parse(str.trim());
+  }
+}
+
+function showCodeSize(elId, code) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = `${code.length} caractere • ${SUPPORTS_COMPRESSION ? 'comprimat deflate' : 'base64'}`;
+}
+
+// ══════════════════════════════════════════
+// SESSION PERSISTENCE (survives page reload)
+// ══════════════════════════════════════════
+const SS = {
+  save: (key, val) => { try { sessionStorage.setItem('chatbsk_'+key, JSON.stringify(val)); } catch {} },
+  load: (key) => { try { const v = sessionStorage.getItem('chatbsk_'+key); return v ? JSON.parse(v) : null; } catch { return null; } },
+  clear: (key) => { try { sessionStorage.removeItem('chatbsk_'+key); } catch {} },
+  clearAll: () => { ['pending_role','pending_cid','pending_offer','pending_answer','pending_step'].forEach(k=>SS.clear(k)); }
+};
+
+function savePendingSession() {
+  SS.save('pending_role', pendingRole);
+  SS.save('pending_cid', pendingContactId);
+  SS.save('pending_step', pendingStep);
+  const offer = document.getElementById('offer-out')?.value;
+  const answer = document.getElementById('answer-out')?.value;
+  if (offer) SS.save('pending_offer', offer);
+  if (answer) SS.save('pending_answer', answer);
+}
+
+function restorePendingSession() {
+  const role = SS.load('pending_role');
+  const cid  = SS.load('pending_cid');
+  const step = SS.load('pending_step');
+  const offer= SS.load('pending_offer');
+  const answer=SS.load('pending_answer');
+
+  if (!role || !cid) return;
+
+  pendingRole = role;
+  pendingContactId = cid;
+  pendingStep = step || 0;
+
+  if (role === 'initiator' && offer && step >= 1) {
+    // Restore initiator at step 2 (waiting for answer)
+    document.getElementById('nc-initiator-view').style.display = 'block';
+    document.getElementById('nc-responder-view').style.display = 'none';
+    document.getElementById('nc-s1').style.display = 'none';
+    document.getElementById('nc-s2').style.display = 'block';
+    document.getElementById('nc-dot1').className = 'step-dot done';
+    document.getElementById('nc-dot2').className = 'step-dot active';
+    document.getElementById('offer-out').value = offer;
+    showCodeSize('offer-size-badge', offer);
+    setAlert('nc-alert2', 'info', '🔄 Sesiune restaurată după reload. Codul de ofertă este mai jos.');
+    openModal('new-conn-modal');
+    // Re-create PC so we can accept answer
+    if (pc) pc.close();
+    _restoreInitiatorPC();
+  } else if (role === 'responder' && answer && step >= 1) {
+    // Restore responder at step 2 (waiting for initiator to connect)
+    document.getElementById('nc-responder-view').style.display = 'block';
+    document.getElementById('nc-initiator-view').style.display = 'none';
+    document.getElementById('nr-s1').style.display = 'none';
+    document.getElementById('nr-s2').style.display = 'block';
+    document.getElementById('nr-dot1').className = 'step-dot done';
+    document.getElementById('nr-dot2').className = 'step-dot active';
+    document.getElementById('answer-out').value = answer;
+    showCodeSize('answer-size-badge', answer);
+    setAlert('nr-alert2', 'info', '🔄 Sesiune restaurată. Dacă nu s-a conectat, retrimite răspunsul.');
+    openModal('new-conn-modal');
+    // Re-create PC and re-apply offer+answer so we can receive connection
+    _restoreResponderPC();
+  }
+}
+
+async function _restoreInitiatorPC() {
+  // We need to regenerate offer for PC to be functional; the old PC is gone after reload
+  // Just silently create a new PC — user keeps old offer code, which won't work
+  // Instead: show note to regenerate
+  setAlert('nc-alert2', 'warn', '⚠ După reload, regenerează oferta și trimite noul cod — codul vechi nu mai e valid.');
+  document.getElementById('offer-out').value = '';
+  const badge = document.getElementById('offer-size-badge');
+  if (badge) badge.textContent = '';
+  createPC();
+  dc = pc.createDataChannel('chat');
+  dc.binaryType = 'arraybuffer';
+  setupDataChannel(dc);
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitICE(pc);
+    const code = await compressSDP(pc.localDescription);
+    document.getElementById('offer-out').value = code;
+    showCodeSize('offer-size-badge', code);
+    SS.save('pending_offer', code);
+    setAlert('nc-alert2', 'ok', '✓ Ofertă nouă generată după reload. Trimite noul cod.');
+  } catch(e) { setAlert('nc-alert2', 'err', 'Eroare: '+e.message); }
+}
+
+async function _restoreResponderPC() {
+  // Can't restore a live PC after reload — show message
+  setAlert('nr-alert2', 'warn', '⚠ După reload, Inițiatorul trebuie să genereze o ofertă nouă. Apasă înapoi și lipește noul cod.');
+}
+
+// ── URL hash offer detection ──
+function checkURLHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#O:')) return;
+  const code = hash.slice(3);
+  if (!code) return;
+  // Auto-open responder with pre-filled offer
+  setTimeout(() => {
+    pendingRole = 'responder';
+    pendingContactId = generateId();
+    document.getElementById('nc-responder-view').style.display = 'block';
+    document.getElementById('nc-initiator-view').style.display = 'none';
+    document.getElementById('offer-in').value = code;
+    openModal('new-conn-modal');
+    setAlert('nr-alert1', 'info', '✓ Cod preluat din link. Apasă "Generează răspuns".');
+    location.hash = ''; // clear hash
+  }, 500);
+}
+
+// ══════════════════════════════════════════
+// AUTO CLIPBOARD PASTE
+// ══════════════════════════════════════════
+let lastAutoPasteTarget = null;
+
+async function tryAutoPaste(el, alertId) {
+  if (el.value.trim()) return; // already has content
+  if (el === lastAutoPasteTarget) return; // don't repeat on same element
+  lastAutoPasteTarget = el;
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || text.length < 20) return; // too short to be a code
+    // Check if looks like a valid code (base64url characters)
+    if (/^[A-Za-z0-9+/\-_=]{20,}$/.test(text.trim())) {
+      el.value = text.trim();
+      el.style.borderColor = 'var(--teal)';
+      setTimeout(() => el.style.borderColor = '', 1500);
+      if (alertId) setAlert(alertId, 'ok', '✓ Auto-paste din clipboard.');
+    }
+  } catch {
+    // Clipboard permission denied — silent
+  }
+}
+
+async function manualPaste(elId, alertId) {
+  const el = document.getElementById(elId);
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && text.trim()) {
+      el.value = text.trim();
+      if (alertId) setAlert(alertId, 'ok', '✓ Lipit din clipboard.');
+    }
+  } catch {
+    setAlert(alertId, 'info', 'Permisiune clipboard refuzată. Lipește manual (Ctrl+V / long-press).');
+    el.focus();
+  }
+}
+
+// ══════════════════════════════════════════
 // SIGNALING FLOWS
 // ══════════════════════════════════════════
 
-// ─ New contact ─
 function openNewConnectionModal() {
   resetSignalingUI();
   pendingRole = 'initiator';
@@ -1244,7 +1558,7 @@ function resetSignalingUI() {
     const el = document.getElementById(id);
     if (el) el.style.display = id.endsWith('1') ? 'block' : 'none';
   });
-  ['nc-dot1','nc-dot2','nc-dot3','nr-dot1','nr-dot2'].forEach(id => {
+  ['nc-dot1','nc-dot2','nc-dot3','nr-dot1','nr-dot2','nr-dot3'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.className = 'step-dot' + (id.endsWith('1') ? ' active' : '');
@@ -1257,90 +1571,143 @@ function resetSignalingUI() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  ['nc-alert1','nc-alert2','nr-alert1','nr-alert2'].forEach(id => {
+  ['nc-alert1','nc-alert2','nc-alert3','nr-alert1','nr-alert2'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
   });
+  ['offer-size-badge','answer-size-badge'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+  lastAutoPasteTarget = null;
   if (pc) { pc.close(); pc = null; }
+  SS.clearAll();
 }
 
 async function genOffer() {
-  if (pc) { pc.close(); }
+  const btn = document.getElementById('gen-offer-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Se generează…'; }
+  if (pc) pc.close();
   createPC();
   dc = pc.createDataChannel('chat');
   dc.binaryType = 'arraybuffer';
   setupDataChannel(dc);
-  setAlert('nc-alert1', 'info', 'Se generează oferta…');
+  setAlert('nc-alert1', 'info', 'Se generează oferta comprimată…');
   try {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await waitICE(pc);
-    document.getElementById('offer-out').value = JSON.stringify(pc.localDescription);
+    const code = await compressSDP(pc.localDescription);
+    document.getElementById('offer-out').value = code;
+    showCodeSize('offer-size-badge', code);
+    // Persist to session
+    pendingStep = 1;
+    SS.save('pending_role', 'initiator');
+    SS.save('pending_cid', pendingContactId);
+    SS.save('pending_offer', code);
+    SS.save('pending_step', 1);
+
     document.getElementById('nc-s1').style.display = 'none';
     document.getElementById('nc-s2').style.display = 'block';
     document.getElementById('nc-dot1').className = 'step-dot done';
     document.getElementById('nc-dot2').className = 'step-dot active';
-    setAlert('nc-alert2', 'ok', '✓ Ofertă generată. Copiaz-o și trimite-o.');
+    setAlert('nc-alert2', 'ok', `✓ ${code.length} caractere — copiază și trimite.`);
   } catch(e) {
     setAlert('nc-alert1', 'err', 'Eroare: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Generează ofertă'; }
   }
 }
 
 async function submitAnswer() {
   const ansStr = document.getElementById('answer-in').value.trim();
-  if (!ansStr) { setAlert('nc-alert2', 'err', 'Lipește răspunsul!'); return; }
+  if (!ansStr) { setAlert('nc-alert3', 'err', 'Lipește răspunsul!'); return; }
   try {
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(ansStr)));
+    const sdp = await decompressSDP(ansStr);
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
     const customName = document.getElementById('nc-contact-name').value.trim();
-    if (customName) {
-      pendingContactName = customName;
-    }
+    if (customName) pendingContactName = customName;
     document.getElementById('nc-dot2').className = 'step-dot done';
     document.getElementById('nc-dot3').className = 'step-dot active';
-    setAlert('nc-alert2', 'info', 'Conectare în curs…');
+    setAlert('nc-alert3', 'info', 'Conectare în curs…');
   } catch(e) {
-    setAlert('nc-alert2', 'err', 'Răspuns invalid: ' + e.message);
+    setAlert('nc-alert3', 'err', 'Cod invalid sau expirat: ' + e.message);
   }
 }
 
 async function processOffer() {
   const ofStr = document.getElementById('offer-in').value.trim();
-  if (!ofStr) { setAlert('nr-alert1', 'err', 'Lipește oferta!'); return; }
+  if (!ofStr) { setAlert('nr-alert1', 'err', 'Lipește codul!'); return; }
   if (pc) pc.close();
   createPC();
-  setAlert('nr-alert1', 'info', 'Se procesează oferta…');
+  setAlert('nr-alert1', 'info', 'Se procesează…');
   try {
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(ofStr)));
+    const sdp = await decompressSDP(ofStr);
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await waitICE(pc);
-    document.getElementById('answer-out').value = JSON.stringify(pc.localDescription);
+    const code = await compressSDP(pc.localDescription);
+    document.getElementById('answer-out').value = code;
+    showCodeSize('answer-size-badge', code);
+    // Persist
+    pendingStep = 1;
+    SS.save('pending_role', 'responder');
+    SS.save('pending_cid', pendingContactId);
+    SS.save('pending_answer', code);
+    SS.save('pending_step', 1);
+
     document.getElementById('nr-s1').style.display = 'none';
     document.getElementById('nr-s2').style.display = 'block';
     document.getElementById('nr-dot1').className = 'step-dot done';
     document.getElementById('nr-dot2').className = 'step-dot active';
-    setAlert('nr-alert2', 'ok', '✓ Răspuns generat. Copiaz-o și trimite-o Inițiatorului.');
+    setAlert('nr-alert2', 'ok', `✓ ${code.length} caractere — copiază și trimite Inițiatorului.`);
   } catch(e) {
-    setAlert('nr-alert1', 'err', 'Ofertă invalidă: ' + e.message);
+    setAlert('nr-alert1', 'err', 'Cod invalid sau expirat: ' + e.message);
+  }
+}
+
+// Copy compressed code to clipboard
+async function copyCode(inputId, alertId) {
+  const val = document.getElementById(inputId)?.value;
+  if (!val) return;
+  try {
+    await navigator.clipboard.writeText(val);
+    setAlert(alertId, 'ok', '✓ Copiat în clipboard!');
+  } catch {
+    document.getElementById(inputId).select();
+    document.execCommand('copy');
+    setAlert(alertId, 'ok', '✓ Copiat!');
+  }
+}
+
+// Copy as shareable link (#O: hash)
+async function copyAsLink(alertId) {
+  const code = document.getElementById('offer-out')?.value;
+  if (!code) return;
+  const link = location.href.split('#')[0] + '#O:' + code;
+  try {
+    await navigator.clipboard.writeText(link);
+    setAlert(alertId, 'ok', '✓ Link copiat! Destinatarul îl deschide în browser și codul e pre-completat automat.');
+  } catch {
+    setAlert(alertId, 'err', 'Nu s-a putut copia link-ul.');
   }
 }
 
 // ─ Reconnect to existing contact ─
 function openReconnectModal(role) {
   pendingRole = role;
+  pendingContactId = currentContactId;
+  resetSignalingUI();
   if (role === 'initiator') {
-    pendingContactId = currentContactId; // reuse same contact id
-    resetSignalingUI();
     document.getElementById('nc-initiator-view').style.display = 'block';
     document.getElementById('nc-responder-view').style.display = 'none';
     openModal('new-conn-modal');
     genOffer();
   } else {
-    pendingContactId = currentContactId;
-    resetSignalingUI();
     document.getElementById('nc-responder-view').style.display = 'block';
     document.getElementById('nc-initiator-view').style.display = 'none';
     openModal('new-conn-modal');
+    // Try auto-paste clipboard on open
+    setTimeout(() => tryAutoPaste(document.getElementById('offer-in'), 'nr-alert1'), 300);
   }
 }
 
@@ -1348,6 +1715,7 @@ function openReconnectModal(role) {
 let pendingContactName = '';
 
 function onConnected() {
+  SS.clearAll(); // connection succeeded — clear pending session
   closeModal('new-conn-modal');
   detectConnectionType();
 
@@ -1784,7 +2152,8 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 function setAlert(id, type, msg) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  const cls = type === 'ok' ? 'alert-ok' : type === 'err' ? 'alert-err' : type === 'warn' ? 'alert-err' : 'alert-info';
+  el.innerHTML = `<div class="alert ${cls}">${msg}</div>`;
 }
 
 // ─ Copy text ─
