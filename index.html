@@ -104,24 +104,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;
 .mc.mqr .mc-tag{background:var(--a1d);color:var(--a1);}
 .mc.mcp .mc-tag{background:var(--bld);color:var(--bl);}
 
-/* ─── LAN SCREEN ─── */
-.lan-box{margin:16px;padding:20px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);}
-.lan-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:10px;}
-.lan-ip{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gr);letter-spacing:1px;
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.lan-copy{font-size:11px;font-family:var(--mono);padding:4px 10px;border-radius:var(--rs);
-  background:var(--grd);color:var(--gr);border:1px solid rgba(31,207,106,.3);cursor:pointer;transition:all .15s;}
-.lan-copy:hover{background:rgba(31,207,106,.2);}
-.lan-ip-qr{display:flex;justify-content:center;margin:20px 0 10px;}
-.lan-ip-qr-inner{background:#fff;padding:12px;border-radius:10px;box-shadow:0 0 0 1px var(--b1);}
-.lan-info{font-size:12px;color:var(--t3);line-height:1.65;margin-top:14px;padding:12px;
-  background:rgba(31,207,106,.04);border:1px solid rgba(31,207,106,.15);border-radius:var(--rs);}
-.lan-info b{color:var(--gr);}
-.lan-divider{display:flex;align-items:center;gap:10px;margin:16px;font-size:11px;color:var(--t3);font-family:var(--mono);}
-.lan-divider::before,.lan-divider::after{content:'';flex:1;height:1px;background:var(--b1);}
-.lan-connect-box{margin:0 16px 16px;padding:18px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);}
-.lan-connect-label{font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5;}
-.lan-btn-note{font-size:11px;color:var(--t3);margin-top:8px;font-family:var(--mono);}
+
 
 /* ─── STEP FLOW ─── */
 .sflow{padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
@@ -326,14 +309,6 @@ textarea.field{resize:vertical;min-height:88px;font-family:var(--mono);font-size
       Metodă de conectare
     </div>
     <div class="methods">
-      <div class="mc mlan" onclick="openLan()">
-        <div class="mc-ico">🌐</div>
-        <div>
-          <div class="mc-name">Rețea Locală (LAN)</div>
-          <div class="mc-desc">Vede adresa ta IP pe rețea și generează un QR de conexiune pentru celălalt dispozitiv.</div>
-          <div class="mc-tag">RECOMANDAT · FĂRĂ INTERNET</div>
-        </div>
-      </div>
       <div class="mc mqr" onclick="openModal('mQrRole')">
         <div class="mc-ico">⬛</div>
         <div>
@@ -359,44 +334,6 @@ textarea.field{resize:vertical;min-height:88px;font-family:var(--mono);font-size
   </div>
 </div>
 
-<!-- ══ LAN SCREEN ══ -->
-<div id="pgLan" class="page">
-  <div class="bar">
-    <button class="ibtn" onclick="go('pgNew')">←</button>
-    <div><div class="bar-title">Rețea Locală</div><div class="bar-sub">IP-UL TĂU PE LAN</div></div>
-    <div style="width:32px"></div>
-  </div>
-  <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
-    <!-- My IP -->
-    <div class="lan-box">
-      <div class="lan-label">Adresa ta pe rețeaua locală</div>
-      <div class="lan-ip">
-        <span id="myIpText">detectare...</span>
-        <button class="lan-copy" onclick="copyMyIp()">📋 Copiază</button>
-      </div>
-      <div style="font-size:11px;color:var(--t3);margin-top:6px;font-family:var(--mono);">
-        Trimite această adresă celuilalt utilizator din rețea sau arată-i codul QR de mai jos.
-      </div>
-      <div class="lan-ip-qr"><div class="lan-ip-qr-inner" id="ipQrBox"></div></div>
-      <div class="lan-info">
-        <b>Cum te conectezi:</b><br>
-        1. Celălalt utilizator vede adresa ta IP<br>
-        2. Alege cine inițiază și cine răspunde<br>
-        3. Schimbați două coduri QR → gata!<br><br>
-        ⚠️ Descoperirea automată necesită o aplicație nativă (cum face LocalSend). Din browser pur, nu este posibil tehnic — browserele nu pot deschide porturi TCP server.
-      </div>
-    </div>
-    <div class="lan-divider">CONTINUĂ CU QR</div>
-    <div class="lan-connect-box">
-      <div class="lan-connect-label">Acum alege rolul tău pentru a stabili conexiunea WebRTC prin QR:</div>
-      <div class="brow">
-        <button class="btn btn-a" onclick="closeModal('mQrRole');startQrInit()">📡 Inițiator — Generez QR</button>
-        <button class="btn btn-b" onclick="closeModal('mQrRole');startQrResp()">📷 Destinatar — Scanez QR</button>
-      </div>
-      <div class="lan-btn-note">Inițiatorul generează primul QR. Destinatarul îl scanează.</div>
-    </div>
-  </div>
-</div>
 
 <!-- ══ QR INITIATOR ══ -->
 <div id="pgQrInit" class="page">
@@ -688,7 +625,6 @@ const CHUNK=16384;
 document.getElementById('myIdBadge').textContent = MY_ID.slice(0,12);
 document.getElementById('myIdBadge').title = 'Tău ID: '+MY_ID;
 renderContacts();
-detectMyIp();
 
 if (!myName) {
   requestAnimationFrame(()=>{
@@ -700,46 +636,12 @@ if (!myName) {
   });
 }
 
-// ─── IP DETECTION ────────────────────────────────────
-function detectMyIp() {
-  const el = document.getElementById('myIpText');
-  try {
-    const tmp = new RTCPeerConnection({iceServers:[]});
-    tmp.createDataChannel('');
-    tmp.createOffer().then(o=>tmp.setLocalDescription(o));
-    tmp.onicecandidate = e => {
-      if (!e || !e.candidate) return;
-      const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-      if (m && !m[1].startsWith('127.')) {
-        el.textContent = m[1];
-        tmp.close();
-        // Generate IP QR
-        const box = document.getElementById('ipQrBox');
-        box.innerHTML = '';
-        try {
-          new QRCode(box, { text:m[1], width:160, height:160,
-            colorDark:'#000000', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
-        } catch(e){}
-      }
-    };
-    setTimeout(()=>{ if(el.textContent==='detectare...') el.textContent='Nedisponibil (fără LAN)'; tmp.close(); }, 3000);
-  } catch { el.textContent='Nedisponibil'; }
-}
-
-function copyMyIp() {
-  const ip = document.getElementById('myIpText').textContent;
-  if (ip.includes('.')) {
-    navigator.clipboard.writeText(ip).then(()=>toast('IP copiat: '+ip)).catch(()=>toast('IP: '+ip));
-  }
-}
-
 // ─── NAVIGATION ──────────────────────────────────────
 function go(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
 }
 function openNew() { go('pgNew'); }
-function openLan() { detectMyIp(); go('pgLan'); }
 
 // ─── WEBRTC ──────────────────────────────────────────
 function mkPc() {
@@ -928,33 +830,73 @@ function startScan(target) {
     target==='offer-resp' ? 'SCANEAZĂ OFERTA' : 'SCANEAZĂ RĂSPUNSUL';
   go('pgScan');
 
-  // Only request camera here — NEVER before this point
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.getElementById('scanStatus').textContent='❌ Camera nu este disponibilă în acest browser/protocol.';
+    document.getElementById('scanStatus').textContent='❌ Camera nu este disponibilă (necesită HTTPS sau localhost).';
     document.getElementById('scanFallback').style.display='block';
     return;
   }
 
-  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } })
-    .then(s=>{
+  // Smart camera selection: avoid ultrawide, prefer main rear camera
+  navigator.mediaDevices.enumerateDevices()
+    .then(devices => {
+      const cams = devices.filter(d => d.kind === 'videoinput');
+
+      // Labels with "ultra" or "wide" (case-insensitive) are ultrawide cameras — skip them
+      const SKIP = /ultra|wide|front|selfie|ir\b|depth/i;
+
+      // Prefer cameras whose label does NOT match skip pattern
+      // If no labels yet (before permission), we try with deviceId constraints after permission
+      let preferred = cams.filter(d => d.label && !SKIP.test(d.label));
+      // Among those, prefer ones with "back", "rear", "main", "0" in label
+      const REAR = /back|rear|main|\b0\b/i;
+      const rearMain = preferred.filter(d => REAR.test(d.label));
+      const chosen = rearMain[0] || preferred[0] || null;
+
+      let constraints;
+      if (chosen && chosen.deviceId) {
+        // Use specific device — most reliable way to avoid ultrawide
+        constraints = { video: { deviceId: { exact: chosen.deviceId }, width:{ideal:1920}, height:{ideal:1080} } };
+      } else {
+        // No labels yet (need permission first) — use environment facing mode
+        // Avoid exact: so browser can fall back if needed
+        constraints = { video: { facingMode: 'environment', width:{ideal:1920}, height:{ideal:1080} } };
+      }
+
+      return navigator.mediaDevices.getUserMedia(constraints)
+        .catch(() => {
+          // Fallback 1: any environment camera, lower res
+          return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        })
+        .catch(() => {
+          // Fallback 2: any camera at all
+          return navigator.mediaDevices.getUserMedia({ video: true });
+        });
+    })
+    .then(s => {
       stream = s;
       const v = document.getElementById('qrVideo');
       v.srcObject = s;
-      v.play().then(()=>{ document.getElementById('scanStatus').textContent='🔍 Caută cod QR...'; tickScan(); })
-               .catch(e=>{ document.getElementById('scanStatus').textContent='❌ Nu pot porni videoul: '+e.message; });
+      // Show camera label in status if available
+      const track = s.getVideoTracks()[0];
+      const label = track ? track.label : '';
+      v.play().then(() => {
+        document.getElementById('scanStatus').textContent = '🔍 Caută cod QR...' + (label ? ' [' + label.slice(0,30) + ']' : '');
+        tickScan();
+      }).catch(e => {
+        document.getElementById('scanStatus').textContent = '❌ Eroare video: ' + e.message;
+        document.getElementById('scanFallback').style.display='block';
+      });
     })
-    .catch(e=>{
+    .catch(e => {
       let msg;
       if (e.name==='NotAllowedError'||e.name==='PermissionDeniedError')
-        msg='❌ Accesul la cameră a fost refuzat. Permite accesul în browser sau folosește varianta manuală de mai jos.';
+        msg='❌ Accesul la cameră refuzat. Permite în browser → sau folosește varianta text de mai jos.';
       else if (e.name==='NotFoundError')
-        msg='❌ Nu s-a găsit nicio cameră pe acest dispozitiv.';
-      else if (e.name==='NotSupportedError'||location.protocol==='file:')
-        msg='❌ Camera nu funcționează pe file:// în unele browsere. Servește fișierul via HTTP sau folosește varianta manuală.';
+        msg='❌ Nicio cameră găsită pe acest dispozitiv.';
       else
-        msg='❌ Eroare cameră: '+e.message;
-      document.getElementById('scanStatus').textContent=msg;
-      document.getElementById('scanFallback').style.display='block';
+        msg='❌ Eroare cameră: ' + (e.message||e.name);
+      document.getElementById('scanStatus').textContent = msg;
+      document.getElementById('scanFallback').style.display = 'block';
     });
 }
 
