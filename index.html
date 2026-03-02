@@ -846,6 +846,27 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
   border-radius:4px;
 }
 
+.waiting-hint{
+  margin-top:14px;
+  padding:10px 14px;
+  background:var(--teal-dim);
+  border:1px solid rgba(20,184,166,.25);
+  border-radius:var(--r-sm);
+  font-size:13px;
+  color:var(--teal);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--mono);
+}
+
+.waiting-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--teal);
+  flex-shrink:0;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+
 .paste-field-wrap{
   position:relative;
   display:flex;
@@ -1113,8 +1134,8 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 <div class="modal-overlay" id="new-conn-modal">
   <div class="modal">
     <div id="nc-initiator-view">
-      <div class="modal-title">📡 Conectare — Tu ești Inițiator</div>
-      <div class="modal-sub">Trimiți codul de ofertă, aștepți răspunsul. Codul e scurt (~500 car.) — merge prin SMS, email, orice.</div>
+      <div class="modal-title">📡 Conexiune nouă — Tu inițiezi</div>
+      <div class="modal-sub">Generezi un cod de conexiune și îl trimiți celeilalte persoane. ~500 caractere — merge prin SMS, email, orice.</div>
       <div class="steps">
         <div class="step-dot active" id="nc-dot1"></div>
         <div class="step-dot" id="nc-dot2"></div>
@@ -1122,9 +1143,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nc-s1">
-        <div class="instr"><b>Pasul 1:</b> Generează codul de ofertă comprimat.</div>
+        <div class="instr"><b>Pasul 1:</b> Generează codul de conexiune și trimite-l celeilalte persoane.</div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="gen-offer-btn" onclick="genOffer()">⚡ Generează ofertă</button>
+          <button class="btn btn-primary" id="gen-offer-btn" onclick="genOffer()">⚡ Inițiază conexiune</button>
           <button class="btn btn-ghost" onclick="switchRole()">Schimbă rol →</button>
           <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
         </div>
@@ -1132,20 +1153,21 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nc-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Trimite codul de mai jos celeilalte persoane.</div>
+        <div class="instr"><b>Pasul 2:</b> Trimite codul de mai jos celeilalte persoane.
+          <br><small style="color:var(--warn);opacity:.8">⚠ Nu reîncărca pagina — codul expiră la reload.</small>
+        </div>
         <div class="code-display-wrap">
           <div class="code-size-badge" id="offer-size-badge"></div>
           <textarea id="offer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
           <div class="code-actions">
             <button class="btn btn-primary" onclick="copyCode('offer-out','nc-alert2')">📋 Copiază codul</button>
             <button class="btn btn-ghost" onclick="copyAsLink('nc-alert2')">🔗 Copiază ca link</button>
-            <span class="session-badge">💾 salvat automat</span>
           </div>
         </div>
         <div id="nc-alert2"></div>
         <div style="margin-top:18px">
           <div class="instr"><b>Pasul 3:</b> Când primești <b>răspunsul</b>, lipește-l mai jos.
-            <span class="auto-paste-hint"> Apasă câmpul — auto-paste din clipboard ↓</span>
+            <span class="auto-paste-hint"> Auto-paste la focus ↓</span>
           </div>
           <div class="paste-field-wrap">
             <textarea id="answer-in" class="code-textarea" rows="4"
@@ -1164,8 +1186,8 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
     </div>
 
     <div id="nc-responder-view" style="display:none">
-      <div class="modal-title">🔗 Conectare — Tu ești Destinatar</div>
-      <div class="modal-sub">Ai primit un cod scurt. Lipește-l, generezi un răspuns, trimiți înapoi. Gata.</div>
+      <div class="modal-title">🔗 Conexiune nouă — Tu răspunzi</div>
+      <div class="modal-sub">Ai primit un cod de conexiune. Lipește-l, generezi un răspuns, trimiți înapoi.</div>
       <div class="steps">
         <div class="step-dot active" id="nr-dot1"></div>
         <div class="step-dot" id="nr-dot2"></div>
@@ -1174,7 +1196,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
       <div id="nr-s1">
         <div class="instr"><b>Pasul 1:</b> Lipește codul primit de la Inițiator.
-          <span class="auto-paste-hint"> Apasă câmpul — auto-paste din clipboard ↓</span>
+          <span class="auto-paste-hint"> Auto-paste la focus ↓</span>
         </div>
         <div class="paste-field-wrap">
           <textarea id="offer-in" class="code-textarea" rows="4"
@@ -1191,14 +1213,15 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       </div>
 
       <div id="nr-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Trimite răspunsul Inițiatorului, apoi conexiunea se face automat.</div>
+        <div class="instr"><b>Pasul 2:</b> Trimite răspunsul Inițiatorului, apoi conexiunea se face automat.
+          <br><small style="color:var(--warn);opacity:.8">⚠ Nu reîncărca pagina — răspunsul expiră la reload.</small>
+        </div>
         <div class="code-display-wrap">
           <div class="code-size-badge" id="answer-size-badge"></div>
           <textarea id="answer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
           <div class="code-actions">
             <button class="btn btn-primary" onclick="copyCode('answer-out','nr-alert2')">📋 Copiază răspunsul</button>
             <button class="btn btn-ghost" onclick="copyAnswerAsLink('nr-alert2')">🔗 Copiază ca link</button>
-            <span class="session-badge">💾 salvat automat</span>
           </div>
         </div>
         <div class="form-group" style="margin-top:12px">
@@ -1206,13 +1229,15 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
           <input type="text" id="nr-contact-name" placeholder="ex: Ion">
         </div>
         <div id="nr-alert2"></div>
-        <div class="instr" style="margin-top:10px;border-left-color:var(--teal);font-size:12px">
-          ⏳ Aștepți ca Inițiatorul să proceseze răspunsul. Dacă dai reload, răspunsul e salvat automat.
+        <div class="waiting-hint">
+          <span class="waiting-dot"></span>
+          Aștepți confirmarea Inițiatorului…
         </div>
       </div>
     </div>
   </div>
 </div>
+
 
 <!-- ═══ MODAL: Chat Settings ═══ -->
 <div class="modal-overlay" id="chat-settings-modal">
@@ -1565,97 +1590,34 @@ const SS = {
   clearAll: () => { ['pending_role','pending_cid','pending_offer','pending_answer','pending_step'].forEach(k=>SS.clear(k)); }
 };
 
-function savePendingSession() {
-  SS.save('pending_role', pendingRole);
-  SS.save('pending_cid', pendingContactId);
-  SS.save('pending_step', pendingStep);
-  const offer = document.getElementById('offer-out')?.value;
-  const answer = document.getElementById('answer-out')?.value;
-  if (offer) SS.save('pending_offer', offer);
-  if (answer) SS.save('pending_answer', answer);
-}
-
 function restorePendingSession() {
-  const role = SS.load('pending_role');
-  const cid  = SS.load('pending_cid');
-  const step = SS.load('pending_step');
-  const offer= SS.load('pending_offer');
-  const answer=SS.load('pending_answer');
-
-  if (!role || !cid) return;
-
-  pendingRole = role;
-  pendingContactId = cid;
-  pendingStep = step || 0;
-
-  if (role === 'initiator' && offer && step >= 1) {
-    // Restore initiator at step 2 (waiting for answer)
-    document.getElementById('nc-initiator-view').style.display = 'block';
-    document.getElementById('nc-responder-view').style.display = 'none';
-    document.getElementById('nc-s1').style.display = 'none';
-    document.getElementById('nc-s2').style.display = 'block';
-    document.getElementById('nc-dot1').className = 'step-dot done';
-    document.getElementById('nc-dot2').className = 'step-dot active';
-    document.getElementById('offer-out').value = offer;
-    showCodeSize('offer-size-badge', offer);
-    setAlert('nc-alert2', 'info', '🔄 Sesiune restaurată după reload. Codul de ofertă este mai jos.');
-    openModal('new-conn-modal');
-    // Re-create PC so we can accept answer
-    if (pc) pc.close();
-    _restoreInitiatorPC();
-  } else if (role === 'responder' && answer && step >= 1) {
-    // Restore responder at step 2 (waiting for initiator to connect)
-    document.getElementById('nc-responder-view').style.display = 'block';
-    document.getElementById('nc-initiator-view').style.display = 'none';
-    document.getElementById('nr-s1').style.display = 'none';
-    document.getElementById('nr-s2').style.display = 'block';
-    document.getElementById('nr-dot1').className = 'step-dot done';
-    document.getElementById('nr-dot2').className = 'step-dot active';
-    document.getElementById('answer-out').value = answer;
-    showCodeSize('answer-size-badge', answer);
-    setAlert('nr-alert2', 'info', '🔄 Sesiune restaurată. Dacă nu s-a conectat, retrimite răspunsul.');
-    openModal('new-conn-modal');
-    // Re-create PC and re-apply offer+answer so we can receive connection
-    _restoreResponderPC();
-  }
+  // WebRTC sessions cannot survive a page reload — clear any stale signaling data
+  SS.clearAll();
 }
 
-async function _restoreInitiatorPC() {
-  // We need to regenerate offer for PC to be functional; the old PC is gone after reload
-  // Just silently create a new PC — user keeps old offer code, which won't work
-  // Instead: show note to regenerate
-  setAlert('nc-alert2', 'warn', '⚠ După reload, regenerează oferta și trimite noul cod — codul vechi nu mai e valid.');
-  document.getElementById('offer-out').value = '';
-  const badge = document.getElementById('offer-size-badge');
-  if (badge) badge.textContent = '';
-  createPC();
-  dc = pc.createDataChannel('chat');
-  dc.binaryType = 'arraybuffer';
-  setupDataChannel(dc);
-  try {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    await waitICE(pc);
-    const code = await compressSDP(pc.localDescription);
-    document.getElementById('offer-out').value = code;
-    showCodeSize('offer-size-badge', code);
-    SS.save('pending_offer', code);
-    setAlert('nc-alert2', 'ok', '✓ Ofertă nouă generată după reload. Trimite noul cod.');
-  } catch(e) { setAlert('nc-alert2', 'err', 'Eroare: '+e.message); }
+// resetAndGenOffer - called when user wants to start fresh after expired session
+function resetAndGenOffer() {
+  document.getElementById('nc-s2').style.display = 'none';
+  document.getElementById('nc-s1').style.display = 'block';
+  document.getElementById('nc-dot1').className = 'step-dot active';
+  document.getElementById('nc-dot2').className = 'step-dot';
+  document.getElementById('nc-dot3').className = 'step-dot';
+  document.getElementById('nc-alert1').innerHTML = '';
+  if (pc) { pc.close(); pc = null; }
+  SS.clearAll();
+  pendingContactId = currentContactId || generateId();
+  genOffer();
 }
 
-async function _restoreResponderPC() {
-  // Can't restore a live PC after reload — show message
-  setAlert('nr-alert2', 'warn', '⚠ După reload, Inițiatorul trebuie să genereze o ofertă nouă. Apasă înapoi și lipește noul cod.');
-}
-
-// ── URL hash offer/answer detection ──
+// ── URL hash connection code detection ──
 function checkURLHash() {
   const hash = location.hash;
+
   if (hash.startsWith('#O:')) {
-    // Pre-filled offer → open as responder
+    // Connection code link → open as responder
     const code = hash.slice(3);
     if (!code) return;
+    history.replaceState(null, '', location.pathname);
     setTimeout(() => {
       pendingRole = 'responder';
       pendingContactId = generateId();
@@ -1664,83 +1626,50 @@ function checkURLHash() {
       document.getElementById('offer-in').value = code;
       openModal('new-conn-modal');
       setAlert('nr-alert1', 'ok', '✓ Cod preluat din link. Apasă "Generează răspuns".');
-      history.replaceState(null, '', location.pathname);
     }, 400);
 
   } else if (hash.startsWith('#A:')) {
-    // Pre-filled answer → open as initiator to apply it
+    // Answer link → only valid if initiator's PC is still alive (no reload happened)
     const answerCode = hash.slice(3);
     if (!answerCode) return;
     history.replaceState(null, '', location.pathname);
 
     setTimeout(async () => {
-      // If we have a live PC with pending offer → apply answer directly
       if (pc && pc.signalingState === 'have-local-offer') {
+        // PC alive — apply answer directly
         try {
           const sdp = await decompressSDP(answerCode);
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-          // Restore UI to step 2 so user sees the connecting state
+          // Show "connecting" state in modal
           openModal('new-conn-modal');
           document.getElementById('nc-initiator-view').style.display = 'block';
           document.getElementById('nc-responder-view').style.display = 'none';
           document.getElementById('nc-s1').style.display = 'none';
           document.getElementById('nc-s2').style.display = 'block';
+          document.getElementById('nc-dot1').className = 'step-dot done';
           document.getElementById('nc-dot2').className = 'step-dot done';
           document.getElementById('nc-dot3').className = 'step-dot active';
-          setAlert('nc-alert3', 'info', '⏳ Răspuns aplicat din link. Conectare în curs…');
+          setAlert('nc-alert3', 'info', '⏳ Răspuns aplicat. Conectare în curs…');
         } catch(e) {
           openModal('new-conn-modal');
-          setAlert('nc-alert3', 'err', 'Eroare la aplicarea răspunsului: ' + e.message);
-        }
-        return;
-      }
-
-      // No live PC — check if we have a saved pending offer we can restore
-      const savedOffer = SS.load('pending_offer');
-      const savedCid   = SS.load('pending_cid');
-
-      if (savedOffer && savedCid) {
-        // Regenerate PC, re-apply offer, then apply answer
-        pendingRole = 'initiator';
-        pendingContactId = savedCid;
-        openModal('new-conn-modal');
-        document.getElementById('nc-initiator-view').style.display = 'block';
-        document.getElementById('nc-responder-view').style.display = 'none';
-        document.getElementById('nc-s1').style.display = 'none';
-        document.getElementById('nc-s2').style.display = 'block';
-        document.getElementById('nc-dot1').className = 'step-dot done';
-        document.getElementById('nc-dot2').className = 'step-dot active';
-        document.getElementById('offer-out').value = savedOffer;
-        showCodeSize('offer-size-badge', savedOffer);
-        setAlert('nc-alert3', 'info', '⏳ Se restaurează sesiunea și se aplică răspunsul…');
-        try {
-          // Recreate PC from saved offer
-          if (pc) pc.close();
-          createPC();
-          dc = pc.createDataChannel('chat');
-          dc.binaryType = 'arraybuffer';
-          setupDataChannel(dc);
-          const offerSdp = await decompressSDP(savedOffer);
-          await pc.setLocalDescription(new RTCSessionDescription(offerSdp));
-          // Now apply the answer
-          const answerSdp = await decompressSDP(answerCode);
-          await pc.setRemoteDescription(new RTCSessionDescription(answerSdp));
-          document.getElementById('nc-dot2').className = 'step-dot done';
-          document.getElementById('nc-dot3').className = 'step-dot active';
-          setAlert('nc-alert3', 'ok', '✓ Sesiune restaurată. Conectare în curs…');
-        } catch(e) {
-          setAlert('nc-alert3', 'err', '⚠ Răspunsul nu este compatibil cu oferta salvată. Generați o nouă ofertă.');
-          document.getElementById('nc-s1').style.display = 'block';
-          document.getElementById('nc-s2').style.display = 'none';
+          document.getElementById('nc-initiator-view').style.display = 'block';
+          document.getElementById('nc-responder-view').style.display = 'none';
+          setAlert('nc-alert1', 'err', 'Eroare la aplicarea răspunsului: ' + e.message);
         }
       } else {
-        // No saved session at all — need fresh offer
+        // PC is dead — session expired after reload, must start fresh
+        SS.clearAll();
         pendingRole = 'initiator';
-        pendingContactId = generateId();
+        pendingContactId = currentContactId || generateId();
         openModal('new-conn-modal');
         document.getElementById('nc-initiator-view').style.display = 'block';
         document.getElementById('nc-responder-view').style.display = 'none';
-        setAlert('nc-alert1', 'warn', '⚠ Sesiunea precedentă a expirat. Generează o ofertă nouă și cere un nou răspuns de la Destinatar.');
+        document.getElementById('nc-s1').style.display = 'block';
+        document.getElementById('nc-s2').style.display = 'none';
+        setAlert('nc-alert1', 'err',
+          '⚠ Sesiunea a expirat — pagina a fost reîncărcată și codul de conexiune s-a pierdut.' +
+          '<br><button class="btn btn-primary" style="margin-top:8px;font-size:12px" onclick="resetAndGenOffer()">⚡ Inițiază conexiune nouă</button>'
+        );
       }
     }, 400);
   }
@@ -1849,7 +1778,7 @@ async function genOffer() {
   dc = pc.createDataChannel('chat');
   dc.binaryType = 'arraybuffer';
   setupDataChannel(dc);
-  setAlert('nc-alert1', 'info', 'Se generează oferta comprimată…');
+  setAlert('nc-alert1', 'info', 'Se inițiază conexiunea…');
   try {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -1857,12 +1786,6 @@ async function genOffer() {
     const code = await compressSDP(pc.localDescription);
     document.getElementById('offer-out').value = code;
     showCodeSize('offer-size-badge', code);
-    // Persist to session
-    pendingStep = 1;
-    SS.save('pending_role', 'initiator');
-    SS.save('pending_cid', pendingContactId);
-    SS.save('pending_offer', code);
-    SS.save('pending_step', 1);
 
     document.getElementById('nc-s1').style.display = 'none';
     document.getElementById('nc-s2').style.display = 'block';
@@ -1871,7 +1794,7 @@ async function genOffer() {
     setAlert('nc-alert2', 'ok', `✓ ${code.length} caractere — copiază și trimite.`);
   } catch(e) {
     setAlert('nc-alert1', 'err', 'Eroare: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '⚡ Generează ofertă'; }
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Inițiază conexiune'; }
   }
 }
 
@@ -1906,12 +1829,6 @@ async function processOffer() {
     const code = await compressSDP(pc.localDescription);
     document.getElementById('answer-out').value = code;
     showCodeSize('answer-size-badge', code);
-    // Persist
-    pendingStep = 1;
-    SS.save('pending_role', 'responder');
-    SS.save('pending_cid', pendingContactId);
-    SS.save('pending_answer', code);
-    SS.save('pending_step', 1);
 
     document.getElementById('nr-s1').style.display = 'none';
     document.getElementById('nr-s2').style.display = 'block';
