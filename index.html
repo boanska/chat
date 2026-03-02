@@ -122,6 +122,38 @@ body::before{
 }
 .icon-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
 
+/* Back button (mobile only, hidden on desktop via media query) */
+.back-btn{
+  width:36px;height:36px;
+  border-radius:var(--r-sm);
+  background:transparent;
+  border:none;
+  color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  font-size:20px;
+  flex-shrink:0;
+  margin-right:2px;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.back-btn:active{background:var(--surface2);}
+.rc-back-btn,.wc-back-btn{
+  width:36px;height:36px;
+  border-radius:var(--r-sm);
+  background:transparent;
+  border:none;
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  font-size:20px;
+  flex-shrink:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+  margin-bottom:8px;
+  align-self:flex-start;
+}
+
 .my-name-bar{
   padding:8px 16px;
   background:var(--surface2);
@@ -251,6 +283,7 @@ body::before{
   flex-direction:column;
   height:100vh;
   overflow:hidden;
+  min-width:0;
 }
 
 /* ─── WELCOME SCREEN ─── */
@@ -262,6 +295,7 @@ body::before{
   flex-direction:column;
   gap:12px;
   color:var(--text3);
+  padding:20px;
 }
 
 .welcome-logo{font-size:48px;margin-bottom:8px;}
@@ -810,13 +844,77 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
-/* ─── RESPONSIVE ─── */
-@media(max-width:640px){
-  #sidebar{width:100%;min-width:unset;position:absolute;z-index:200;
-    transform:translateX(0);transition:transform .25s;}
-  #sidebar.hidden{transform:translateX(-100%);}
-  #main{width:100%;}
-  .msg-wrap{max-width:86%;}
+/* ══════════════════════════════════════════
+   MOBILE-FIRST LAYOUT  (WhatsApp / Telegram style)
+   ══════════════════════════════════════════ */
+
+/* On mobile: sidebar = full screen list, main = full screen chat.
+   Only one is visible at a time, controlled by #app.show-chat */
+
+#app { position: relative; }
+
+/* --- Mobile default: show sidebar, hide main --- */
+@media (max-width: 700px) {
+  #sidebar {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    min-width: unset;
+    z-index: 10;
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    transform: translateX(0);
+  }
+
+  #main {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    z-index: 10;
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    transform: translateX(100%);   /* hidden to the right */
+  }
+
+  /* When a chat / contact is open → slide main in, sidebar out */
+  #app.show-chat #sidebar { transform: translateX(-100%); }
+  #app.show-chat #main    { transform: translateX(0); }
+
+  .msg-wrap { max-width: 88%; }
+
+  /* Bigger touch targets */
+  .contact-item { padding: 14px 16px; min-height: 68px; }
+  .contact-avatar { width: 46px; height: 46px; font-size: 18px; border-radius: 14px; }
+
+  /* Input area larger on mobile */
+  #input-area { padding: 10px 12px; gap: 8px; }
+  #msg-input  { font-size: 16px; padding: 10px 14px; } /* 16px prevents iOS zoom */
+
+  /* Chat header back button visible */
+  .back-btn { display: flex !important; }
+
+  /* Modal full-screen on mobile */
+  .modal {
+    width: 100% !important;
+    max-height: 100dvh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto;
+  }
+  .modal-overlay { align-items: flex-end !important; }
+
+  /* Sidebar name bar compact */
+  .my-name-bar { padding: 8px 12px; }
+
+  /* Reconnect screen back btn */
+  .rc-back-btn { display: flex !important; }
+
+  /* Welcome screen back btn */
+  .wc-back-btn { display: flex !important; }
+}
+
+/* --- Desktop: both panels visible side by side --- */
+@media (min-width: 701px) {
+  .back-btn  { display: none !important; }
+  .rc-back-btn { display: none !important; }
+  .wc-back-btn { display: none !important; }
 }
 </style>
 </head>
@@ -856,6 +954,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
     <!-- Welcome -->
     <div id="welcome-screen">
+      <button class="wc-back-btn" onclick="goBackToList()" title="Înapoi">‹ Contacte</button>
       <div class="welcome-logo">🔐</div>
       <div class="welcome-title">ChatBSK</div>
       <div class="welcome-sub">Comunicare P2P directă, fără server. Alege un contact sau adaugă unul nou.</div>
@@ -863,6 +962,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
     <!-- Reconnect prompt -->
     <div id="reconnect-screen">
+      <button class="rc-back-btn" onclick="goBackToList()" title="Înapoi">‹ Contacte</button>
       <div id="rc-avatar" class="reconnect-avatar"></div>
       <div id="rc-name" class="reconnect-name"></div>
       <div class="reconnect-sub">Contactul este offline. Trebuie să faceți un nou schimb de semnale pentru a vă reconecta.</div>
@@ -874,8 +974,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
     </div>
 
     <!-- Chat -->
-    <div id="chat-screen" style="display:none;flex-direction:column;height:100vh;overflow:hidden;flex:1;">
+    <div id="chat-screen" style="display:none;flex-direction:column;height:100%;overflow:hidden;flex:1;">
       <div id="chat-header">
+        <button class="back-btn" onclick="goBackToList()" title="Înapoi">‹</button>
         <div id="ch-avatar" class="contact-avatar" style="width:38px;height:38px;font-size:15px;border-radius:10px;"></div>
         <div class="ch-info">
           <div class="ch-name" id="ch-name"></div>
@@ -1023,6 +1124,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
           <textarea id="answer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
           <div class="code-actions">
             <button class="btn btn-primary" onclick="copyCode('answer-out','nr-alert2')">📋 Copiază răspunsul</button>
+            <button class="btn btn-ghost" onclick="copyAnswerAsLink('nr-alert2')">🔗 Copiază ca link</button>
             <span class="session-badge">💾 salvat automat</span>
           </div>
         </div>
@@ -1241,6 +1343,13 @@ function showReconnectOrChat(contact, isConnected) {
     av.textContent = displayName[0].toUpperCase();
     av.style.background = avatarColor(displayName);
   }
+  // Mobile: slide to main panel
+  document.getElementById('app').classList.add('show-chat');
+}
+
+// Mobile back button → return to contact list
+function goBackToList() {
+  document.getElementById('app').classList.remove('show-chat');
 }
 
 // ══════════════════════════════════════════
@@ -1376,12 +1485,12 @@ function showCodeSize(elId, code) {
 }
 
 // ══════════════════════════════════════════
-// SESSION PERSISTENCE (survives page reload)
+// SESSION PERSISTENCE (localStorage — survives refresh AND tab close)
 // ══════════════════════════════════════════
 const SS = {
-  save: (key, val) => { try { sessionStorage.setItem('chatbsk_'+key, JSON.stringify(val)); } catch {} },
-  load: (key) => { try { const v = sessionStorage.getItem('chatbsk_'+key); return v ? JSON.parse(v) : null; } catch { return null; } },
-  clear: (key) => { try { sessionStorage.removeItem('chatbsk_'+key); } catch {} },
+  save: (key, val) => { try { localStorage.setItem('chatbsk_sig_'+key, JSON.stringify(val)); } catch {} },
+  load: (key) => { try { const v = localStorage.getItem('chatbsk_sig_'+key); return v ? JSON.parse(v) : null; } catch { return null; } },
+  clear: (key) => { try { localStorage.removeItem('chatbsk_sig_'+key); } catch {} },
   clearAll: () => { ['pending_role','pending_cid','pending_offer','pending_answer','pending_step'].forEach(k=>SS.clear(k)); }
 };
 
@@ -1469,23 +1578,64 @@ async function _restoreResponderPC() {
   setAlert('nr-alert2', 'warn', '⚠ După reload, Inițiatorul trebuie să genereze o ofertă nouă. Apasă înapoi și lipește noul cod.');
 }
 
-// ── URL hash offer detection ──
+// ── URL hash offer/answer detection ──
 function checkURLHash() {
   const hash = location.hash;
-  if (!hash.startsWith('#O:')) return;
-  const code = hash.slice(3);
-  if (!code) return;
-  // Auto-open responder with pre-filled offer
-  setTimeout(() => {
-    pendingRole = 'responder';
-    pendingContactId = generateId();
-    document.getElementById('nc-responder-view').style.display = 'block';
-    document.getElementById('nc-initiator-view').style.display = 'none';
-    document.getElementById('offer-in').value = code;
-    openModal('new-conn-modal');
-    setAlert('nr-alert1', 'info', '✓ Cod preluat din link. Apasă "Generează răspuns".');
-    location.hash = ''; // clear hash
-  }, 500);
+  if (hash.startsWith('#O:')) {
+    // Pre-filled offer → open as responder
+    const code = hash.slice(3);
+    if (!code) return;
+    setTimeout(() => {
+      pendingRole = 'responder';
+      pendingContactId = generateId();
+      document.getElementById('nc-responder-view').style.display = 'block';
+      document.getElementById('nc-initiator-view').style.display = 'none';
+      document.getElementById('offer-in').value = code;
+      openModal('new-conn-modal');
+      setAlert('nr-alert1', 'info', '✓ Cod preluat din link. Apasă "Generează răspuns".');
+      history.replaceState(null, '', location.pathname); // clean URL
+    }, 500);
+  } else if (hash.startsWith('#A:')) {
+    // Pre-filled answer → open as initiator waiting for answer
+    const code = hash.slice(3);
+    if (!code) return;
+    setTimeout(() => {
+      // Need to check if we have a pending offer session saved
+      const savedOffer = SS.load('pending_offer');
+      const savedCid   = SS.load('pending_cid');
+      if (!savedOffer || !savedCid) {
+        // No pending offer — just pre-fill the field and open modal at step 2
+        pendingRole = 'initiator';
+        pendingContactId = generateId();
+        // Can't restore PC without the offer, tell user to regenerate
+        openModal('new-conn-modal');
+        setAlert('nc-alert1', 'warn', '⚠ Nu există o sesiune activă. Generează o ofertă nouă și roagă Destinatarul să trimită un nou răspuns.');
+        history.replaceState(null, '', location.pathname);
+        return;
+      }
+      // Restore the initiator session and pre-fill answer
+      pendingRole = 'initiator';
+      pendingContactId = savedCid;
+      pendingStep = SS.load('pending_step') || 1;
+      document.getElementById('nc-initiator-view').style.display = 'block';
+      document.getElementById('nc-responder-view').style.display = 'none';
+      document.getElementById('nc-s1').style.display = 'none';
+      document.getElementById('nc-s2').style.display = 'block';
+      document.getElementById('nc-dot1').className = 'step-dot done';
+      document.getElementById('nc-dot2').className = 'step-dot active';
+      document.getElementById('offer-out').value = savedOffer;
+      showCodeSize('offer-size-badge', savedOffer);
+      document.getElementById('answer-in').value = code;
+      openModal('new-conn-modal');
+      setAlert('nc-alert3', 'info', '✓ Răspuns preluat din link. Regenerează PC-ul și apasă Conectează.');
+      _restoreInitiatorPC().then(() => {
+        // After regeneration, pre-fill answer again (new offer generated)
+        document.getElementById('answer-in').value = code;
+        setAlert('nc-alert3', 'ok', '✓ Ofertă nouă + răspuns pre-completat. Apasă Conectează.');
+      });
+      history.replaceState(null, '', location.pathname);
+    }, 500);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1692,6 +1842,18 @@ async function copyAsLink(alertId) {
   }
 }
 
+async function copyAnswerAsLink(alertId) {
+  const code = document.getElementById('answer-out')?.value;
+  if (!code) return;
+  const link = location.href.split('#')[0] + '#A:' + code;
+  try {
+    await navigator.clipboard.writeText(link);
+    setAlert(alertId, 'ok', '✓ Link copiat! Inițiatorul îl deschide și răspunsul e pre-completat automat.');
+  } catch {
+    setAlert(alertId, 'err', 'Nu s-a putut copia link-ul.');
+  }
+}
+
 // ─ Reconnect to existing contact ─
 function openReconnectModal(role) {
   pendingRole = role;
@@ -1768,6 +1930,7 @@ function showChatScreen() {
   const ch = document.getElementById('chat-screen');
   ch.style.display = 'flex';
   document.getElementById('send-btn').disabled = false;
+  document.getElementById('app').classList.add('show-chat'); // mobile nav
   document.getElementById('msg-input').focus();
 
   const contact = DB.getContact(currentContactId);
@@ -1980,6 +2143,7 @@ function deleteCurrentContact() {
   document.getElementById('reconnect-screen').style.display = 'none';
   document.getElementById('chat-screen').style.display = 'none';
   closeModal('chat-settings-modal');
+  goBackToList(); // mobile: return to contact list
   renderContactList();
   notify('Contact șters');
 }
