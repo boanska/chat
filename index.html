@@ -713,6 +713,57 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 .reconnect-name{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;}
 .reconnect-sub{font-size:13px;color:var(--text2);line-height:1.7;max-width:340px;}
 
+/* ─── QR CODE ─── */
+.rc-qrcode{
+  background:#fff;
+  padding:12px;
+  border-radius:12px;
+  display:inline-flex;
+  box-shadow:0 2px 12px rgba(0,0,0,.3);
+}
+.rc-qrcode canvas,.rc-qrcode img{display:block;border-radius:4px;}
+
+.rc-qr-hint{
+  font-size:12px;
+  color:var(--text2);
+  text-align:center;
+  font-family:var(--mono);
+  letter-spacing:.3px;
+}
+
+.rc-qr-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+
+.rc-waiting-hint{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--teal);font-family:var(--mono);
+  padding:8px 14px;
+  background:var(--teal-dim);
+  border:1px solid rgba(20,184,166,.2);
+  border-radius:var(--r-sm);
+  width:100%;
+  box-sizing:border-box;
+}
+
+/* Also add a QR button inside conn modal */
+.qr-toggle-btn{
+  background:transparent;border:1px solid var(--border2);
+  color:var(--text2);font-size:18px;
+  width:36px;height:36px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;
+  transition:all .15s;
+}
+.qr-toggle-btn:hover{border-color:var(--accent);color:var(--accent);}
+.cm-qr-pop{
+  background:#fff;
+  padding:10px;border-radius:10px;
+  display:none;
+  margin:10px auto 0;
+  width:fit-content;
+  box-shadow:0 2px 12px rgba(0,0,0,.3);
+}
+.cm-qr-pop.show{display:block;}
+
 /* ─── NOTIFICATION ─── */
 #notif-container{
   position:fixed;top:16px;right:16px;z-index:900;
@@ -1082,6 +1133,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 }
 </style>
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <body>
 <div id="app">
 
@@ -1133,17 +1185,42 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       <div class="welcome-sub">Comunicare P2P directă, fără server. Alege un contact sau adaugă unul nou.</div>
     </div>
 
-    <!-- Reconnect prompt -->
+    <!-- Reconnect -->
     <div id="reconnect-screen">
-      <button class="rc-back-btn" onclick="goBackToList()" title="Înapoi">‹ Contacte</button>
+      <button class="rc-back-btn" onclick="goBackToList()">‹ Contacte</button>
       <div id="rc-avatar" class="reconnect-avatar"></div>
       <div id="rc-name" class="reconnect-name"></div>
-      <div class="reconnect-sub">Contactul este offline. Trebuie să faceți un nou schimb de semnale pentru a vă reconecta.</div>
-      <div class="btn-row" style="justify-content:center;margin-top:8px;">
-        <button class="btn btn-primary" onclick="openReconnectModal('initiator')">📡 Eu inițiez</button>
-        <button class="btn btn-ghost" onclick="openReconnectModal('responder')">🔗 Ei inițiază</button>
+
+      <!-- Loading state -->
+      <div id="rc-loading" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0">
+        <div class="cm-spinner"></div>
+        <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">Se generează codul de reconectare…</div>
       </div>
-      <button class="btn btn-danger" style="margin-top:8px;" onclick="deleteCurrentContact()">🗑 Șterge contact</button>
+
+      <!-- QR + link ready -->
+      <div id="rc-qr-wrap" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:320px">
+        <div class="rc-qr-hint">Scanează cu telefonul sau trimite linkul</div>
+        <div id="rc-qrcode" class="rc-qrcode"></div>
+        <div class="rc-qr-actions">
+          <button class="btn btn-primary" onclick="rcCopyLink()">🔗 Copiază link</button>
+          <button class="btn btn-ghost" onclick="rcRegenerate()">↺ Regenerează</button>
+        </div>
+        <div id="rc-link-alert"></div>
+        <div class="rc-waiting-hint">
+          <span class="waiting-dot"></span>
+          Aștept ca cealaltă persoană să scaneze…
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div id="rc-error" style="display:none;text-align:center;padding:10px 0">
+        <div style="color:var(--danger);font-size:13px;margin-bottom:12px" id="rc-error-text">Eroare la generare</div>
+        <button class="btn btn-ghost" onclick="rcRegenerate()">Încearcă din nou</button>
+      </div>
+
+      <div style="margin-top:16px">
+        <button class="btn btn-danger" style="font-size:12px" onclick="deleteCurrentContact()">🗑 Șterge contact</button>
+      </div>
     </div>
 
     <!-- Chat -->
@@ -1269,7 +1346,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       <div class="cm-actions">
         <button class="btn btn-primary" onclick="copyAsLink('cm-link-alert')">🔗 Copiază link</button>
         <button class="btn btn-ghost" onclick="copyCode('offer-out','cm-link-alert')">📋 Copiază cod</button>
+        <button class="qr-toggle-btn" onclick="toggleQR('cm-qr','offer-out')" title="Arată QR">▦</button>
       </div>
+      <div id="cm-qr" class="cm-qr-pop"></div>
       <div id="cm-link-alert"></div>
       <div class="cm-divider-text">— sau, dacă ai primit deja un răspuns —</div>
       <div class="paste-field-wrap">
@@ -1324,7 +1403,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       <div class="cm-actions">
         <button class="btn btn-primary" onclick="copyAnswerAsLink('cm-ans-alert')">🔗 Copiază link</button>
         <button class="btn btn-ghost" onclick="copyCode('answer-out','cm-ans-alert')">📋 Copiază cod</button>
+        <button class="qr-toggle-btn" onclick="toggleQR('cm-qr-ans','answer-out')" title="Arată QR">▦</button>
       </div>
+      <div id="cm-qr-ans" class="cm-qr-pop"></div>
       <div class="form-group" style="margin-top:8px">
         <input type="text" id="nr-contact-name" placeholder="Numele contactului (opțional)" style="font-size:14px">
       </div>
@@ -1349,7 +1430,9 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       <div class="cm-actions">
         <button class="btn btn-primary" onclick="copyRenewAsLink('cm-renew-alert')">🔗 Copiază noul link</button>
         <button class="btn btn-ghost" onclick="copyCode('offer-out-exp','cm-renew-alert')">📋 Copiază cod</button>
+        <button class="qr-toggle-btn" onclick="toggleQR('cm-qr-renew','offer-out-exp')" title="Arată QR">▦</button>
       </div>
+      <div id="cm-qr-renew" class="cm-qr-pop"></div>
       <div id="cm-renew-alert"></div>
       <div class="waiting-hint" style="margin-top:12px">
         <span class="waiting-dot"></span>
@@ -1465,9 +1548,19 @@ function init() {
   }
   document.getElementById('display-myname').textContent = myName;
   renderContactList();
-  setupBCListener();    // listen for cross-tab answer messages
-  updatePendingBadge(); // show badge if there's a saved pending connection
-  checkURLHash();       // handle #O: / #A: links
+  setupBCListener();
+  updatePendingBadge();
+  checkURLHash();
+
+  // Auto-select last contact if no URL hash
+  if (!location.hash) {
+    const contacts = DB.getContacts();
+    if (contacts.length > 0) {
+      // Select the most recently active contact
+      const last = contacts.sort((a,b) => (b.lastTime||'').localeCompare(a.lastTime||''))[0];
+      setTimeout(() => selectContact(last.id), 300);
+    }
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1558,9 +1651,134 @@ function showReconnectOrChat(contact, isConnected) {
     const av = document.getElementById('rc-avatar');
     av.textContent = displayName[0].toUpperCase();
     av.style.background = avatarColor(displayName);
+    // Auto-start reconnection immediately
+    startAutoReconnect(contact.id);
   }
-  // Mobile: slide to main panel
   document.getElementById('app').classList.add('show-chat');
+}
+
+// Auto-generate reconnect offer and show QR on reconnect screen
+let _rcPc = null; // separate PC for reconnect screen
+let _rcCode = null;
+let _rcCid = null;
+
+async function startAutoReconnect(cid) {
+  _rcCid = cid;
+  // Show loading
+  document.getElementById('rc-loading').style.display = 'flex';
+  document.getElementById('rc-qr-wrap').style.display = 'none';
+  document.getElementById('rc-error').style.display = 'none';
+
+  // Check if we have a saved pending reconnect for this contact
+  const saved = SS.load('rc_' + cid);
+  const savedTs = SS.load('rc_ts_' + cid);
+  const age = savedTs ? (Date.now() - savedTs) / 1000 : Infinity;
+
+  // If saved code is less than 55 seconds old (ICE candidates valid ~60s), restore it
+  // Otherwise generate new
+  if (saved && age < 55 && _rcPc && _rcPc.signalingState === 'have-local-offer') {
+    _rcCode = saved;
+    showRcQR(_rcCode, cid);
+    return;
+  }
+
+  // Generate new offer
+  if (_rcPc) { try { _rcPc.close(); } catch {} }
+  _rcPc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]
+  });
+
+  // When connection established via this PC, finalize as main pc
+  const rcDc = _rcPc.createDataChannel('chat');
+  rcDc.binaryType = 'arraybuffer';
+  rcDc.onopen = () => {
+    pc = _rcPc; _rcPc = null;
+    dc = rcDc;
+    setupDataChannel(dc);
+    pendingContactId = _rcCid;
+    SS.del('rc_' + cid); SS.del('rc_ts_' + cid);
+    onConnected();
+  };
+  _rcPc.oniceconnectionstatechange = () => {
+    if (['disconnected','failed','closed'].includes(_rcPc?.iceConnectionState)) {
+      // silently restart
+      _rcPc = null;
+    }
+  };
+  _rcPc.ondatachannel = (e) => {
+    pc = _rcPc; _rcPc = null;
+    dc = e.channel;
+    dc.binaryType = 'arraybuffer';
+    setupDataChannel(dc);
+    pendingContactId = _rcCid;
+    SS.del('rc_' + cid); SS.del('rc_ts_' + cid);
+    onConnected();
+  };
+
+  try {
+    const offer = await _rcPc.createOffer();
+    await _rcPc.setLocalDescription(offer);
+    await new Promise(resolve => {
+      if (_rcPc.iceGatheringState === 'complete') { resolve(); return; }
+      _rcPc.onicegatheringstatechange = () => { if (_rcPc?.iceGatheringState === 'complete') resolve(); };
+      setTimeout(resolve, 4000);
+    });
+    const code = await compressSDP(_rcPc.localDescription);
+    _rcCode = code;
+    SS.save('rc_' + cid, code);
+    SS.save('rc_ts_' + cid, Date.now());
+    showRcQR(code, cid);
+  } catch(e) {
+    document.getElementById('rc-loading').style.display = 'none';
+    document.getElementById('rc-error').style.display = 'block';
+    document.getElementById('rc-error-text').textContent = 'Eroare: ' + e.message;
+  }
+}
+
+function showRcQR(code, cid) {
+  const link = location.href.split('#')[0] + '#O:' + code;
+  document.getElementById('rc-loading').style.display = 'none';
+  document.getElementById('rc-error').style.display = 'none';
+  const wrap = document.getElementById('rc-qr-wrap');
+  wrap.style.display = 'flex';
+
+  // Generate QR
+  const qrEl = document.getElementById('rc-qrcode');
+  qrEl.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qrEl, {
+      text: link,
+      width: 200,
+      height: 200,
+      colorDark: '#0b0e13',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } else {
+    qrEl.style.display = 'none';
+  }
+
+  // Store link for copy button
+  wrap.dataset.link = link;
+  document.getElementById('rc-link-alert').innerHTML = '';
+}
+
+async function rcCopyLink() {
+  const link = document.getElementById('rc-qr-wrap').dataset.link;
+  if (!link) return;
+  try {
+    await navigator.clipboard.writeText(link);
+    setAlert('rc-link-alert', 'ok', '✓ Link copiat!');
+  } catch {
+    setAlert('rc-link-alert', 'err', 'Nu s-a putut copia.');
+  }
+}
+
+function rcRegenerate() {
+  if (_rcCid) {
+    SS.del('rc_' + _rcCid); SS.del('rc_ts_' + _rcCid);
+    startAutoReconnect(_rcCid);
+  }
 }
 
 // Mobile back button → return to contact list
@@ -1713,6 +1931,42 @@ const SS = {
   clearConn: () => ['cid','name','offer_code'].forEach(k=>SS.del(k))
 };
 
+// ─── QR helpers ────────────────────────────────────────
+function makeQR(containerId, text, size=180) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeof QRCode === 'undefined') return;
+  new QRCode(el, {
+    text, width: size, height: size,
+    colorDark: '#0b0e13', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function toggleQR(popId, codeInputId) {
+  const pop = document.getElementById(popId);
+  if (!pop) return;
+  if (pop.classList.contains('show')) {
+    pop.classList.remove('show');
+    return;
+  }
+  const code = document.getElementById(codeInputId)?.value;
+  if (!code) return;
+  // Determine link type from input id
+  const isAnswer = codeInputId.includes('answer');
+  const isRenew = codeInputId.includes('exp');
+  let link;
+  if (isAnswer && !isRenew) {
+    link = location.href.split('#')[0] + '#A:' + code;
+  } else {
+    link = location.href.split('#')[0] + '#O:' + code;
+  }
+  pop.innerHTML = '';
+  makeQR(popId, link, 160);
+  pop.classList.add('show');
+}
+
 // BroadcastChannel: lets a new tab send answer to the original tab
 let _bc = null;
 function getBC() {
@@ -1726,14 +1980,22 @@ function setupBCListener() {
   if (!bc) return;
   bc.onmessage = async (e) => {
     const { type, code } = e.data || {};
-    if (type === 'apply_answer' && pc && pc.signalingState === 'have-local-offer') {
-      try {
-        const sdp = await decompressSDP(code);
-        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-        bc.postMessage({ type: 'answer_applied' });
-        // modal will close via onConnected
-      } catch(err) {
-        bc.postMessage({ type: 'answer_error', msg: err.message });
+    if (type === 'apply_answer') {
+      // Try main pc first, then _rcPc
+      const target = (pc && pc.signalingState === 'have-local-offer') ? pc
+                   : (_rcPc && _rcPc.signalingState === 'have-local-offer') ? _rcPc
+                   : null;
+      if (target) {
+        try {
+          const sdp = await decompressSDP(code);
+          await target.setRemoteDescription(new RTCSessionDescription(sdp));
+          bc.postMessage({ type: 'answer_applied' });
+          if (target === _rcPc) notify('⏳ Reconectare în curs…');
+        } catch(err) {
+          bc.postMessage({ type: 'answer_error', msg: err.message });
+        }
+      } else {
+        bc.postMessage({ type: 'answer_error', msg: 'no live PC' });
       }
     }
   };
@@ -1799,40 +2061,46 @@ function checkURLHash() {
     if (!ansCode) return;
 
     setTimeout(async () => {
-      // 1. Try to apply to live PC in THIS tab
+      // Helper: try applying to a PC
+      async function applyAnswerToPC(targetPc) {
+        const sdp = await decompressSDP(ansCode);
+        await targetPc.setRemoteDescription(new RTCSessionDescription(sdp));
+        return true;
+      }
+
+      // 1. Try live main PC
       if (pc && pc.signalingState === 'have-local-offer') {
         try {
-          const sdp = await decompressSDP(ansCode);
-          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          await applyAnswerToPC(pc);
           showConnPanel('cm-loading');
           document.getElementById('cm-loading-text').textContent = 'Conectare în curs…';
-        } catch(e) {
-          notify('Răspuns invalid: ' + e.message);
-        }
+        } catch(e) { notify('Răspuns invalid: ' + e.message); }
         return;
       }
 
-      // 2. Try to broadcast to another open tab with live PC
+      // 2. Try reconnect-screen PC (_rcPc)
+      if (_rcPc && _rcPc.signalingState === 'have-local-offer') {
+        try {
+          await applyAnswerToPC(_rcPc);
+          // _rcPc.onopen will call onConnected and swap PCs
+          notify('⏳ Reconectare în curs…');
+        } catch(e) { notify('Răspuns invalid: ' + e.message); }
+        return;
+      }
+
+      // 3. Try BroadcastChannel to another open tab
       const bc = getBC();
       if (bc) {
         let replied = false;
-        const timeout = setTimeout(() => {
-          if (!replied) handleDeadSession(ansCode);
-        }, 2500);
-
+        const timeout = setTimeout(() => { if (!replied) handleDeadSession(ansCode); }, 2500);
         bc.postMessage({ type: 'apply_answer', code: ansCode });
-
-        const origHandler = bc.onmessage;
+        const orig = bc.onmessage;
         bc.onmessage = (e) => {
-          if (origHandler) origHandler(e);
+          if (orig) orig(e);
           if (e.data?.type === 'answer_applied') {
-            replied = true;
-            clearTimeout(timeout);
-            showCrossTabSuccess();
+            replied = true; clearTimeout(timeout); showCrossTabSuccess();
           } else if (e.data?.type === 'answer_error') {
-            replied = true;
-            clearTimeout(timeout);
-            handleDeadSession(ansCode);
+            replied = true; clearTimeout(timeout); handleDeadSession(ansCode);
           }
         };
       } else {
@@ -2008,7 +2276,7 @@ async function copyRenewAsLink(alertId) {
   catch { setAlert(alertId,'err','Nu s-a putut copia.'); }
 }
 
-// ─── Reconnect ───────────────────────────────────────
+// ─── Reconnect (from contact menu) ──────────────────────
 function openReconnectModal(role) {
   pendingContactId = currentContactId;
   if (role === 'initiator') {
