@@ -2,7 +2,9 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ChatBSK</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap');
@@ -430,13 +432,14 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
 /* ─── CHAT HEADER ─── */
 #chat-header{
-  padding:12px 20px;
+  padding:10px 14px;
   border-bottom:1px solid var(--border);
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:10px;
   background:var(--surface);
   flex-shrink:0;
+  min-height:58px;
 }
 
 .ch-info{flex:1;min-width:0;}
@@ -492,16 +495,51 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
 .ch-actions{display:flex;gap:6px;}
 
+/* ─── CONTACT MENU ─── */
+#contact-menu{
+  position:fixed;
+  z-index:600;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  min-width:180px;
+  overflow:hidden;
+  display:none;
+  animation:menuIn .15s ease;
+}
+@keyframes menuIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+#contact-menu.open{display:block;}
+
+.menu-item{
+  padding:12px 16px;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--text);
+  transition:background .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.menu-item:hover,.menu-item:active{background:var(--surface2);}
+.menu-item.danger{color:var(--danger);}
+.menu-item-sep{height:1px;background:var(--border);margin:2px 0;}
+
 /* ─── MESSAGES ─── */
 #messages{
   flex:1;
   overflow-y:auto;
-  padding:20px;
+  overflow-x:hidden;
+  padding:14px 14px 6px;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   scrollbar-width:thin;
   scrollbar-color:var(--border2) transparent;
+  /* Critical for mobile keyboard */
+  min-height:0;
+  overscroll-behavior:contain;
 }
 
 .msg-wrap{
@@ -608,13 +646,15 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
 /* ─── INPUT AREA ─── */
 #input-area{
-  padding:14px 20px;
+  padding:10px 14px;
   border-top:1px solid var(--border);
   background:var(--surface);
   display:flex;
-  gap:10px;
+  gap:8px;
   align-items:flex-end;
   flex-shrink:0;
+  /* iOS safe area */
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
 #msg-input{
@@ -872,6 +912,15 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
     z-index: 10;
     transition: transform .28s cubic-bezier(.4,0,.2,1);
     transform: translateX(100%);   /* hidden to the right */
+    /* Use interactive-widget so keyboard doesn't resize the layout */
+    height: 100%;
+    height: 100dvh;
+  }
+
+  /* Chat screen fills the fixed container exactly */
+  #chat-screen {
+    height: 100% !important;
+    /* Let the browser handle keyboard with this trick */
   }
 
   /* When a chat / contact is open → slide main in, sidebar out */
@@ -885,7 +934,6 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
   .contact-avatar { width: 46px; height: 46px; font-size: 18px; border-radius: 14px; }
 
   /* Input area larger on mobile */
-  #input-area { padding: 10px 12px; gap: 8px; }
   #msg-input  { font-size: 16px; padding: 10px 14px; } /* 16px prevents iOS zoom */
 
   /* Chat header back button visible */
@@ -894,7 +942,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
   /* Modal full-screen on mobile */
   .modal {
     width: 100% !important;
-    max-height: 100dvh !important;
+    max-height: 92dvh !important;
     border-radius: 16px 16px 0 0 !important;
     margin-top: auto;
   }
@@ -977,7 +1025,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
     <div id="chat-screen" style="display:none;flex-direction:column;height:100%;overflow:hidden;flex:1;">
       <div id="chat-header">
         <button class="back-btn" onclick="goBackToList()" title="Înapoi">‹</button>
-        <div id="ch-avatar" class="contact-avatar" style="width:38px;height:38px;font-size:15px;border-radius:10px;"></div>
+        <div id="ch-avatar" class="contact-avatar" style="width:38px;height:38px;font-size:15px;border-radius:10px;flex-shrink:0;"></div>
         <div class="ch-info">
           <div class="ch-name" id="ch-name"></div>
           <div class="ch-meta">
@@ -992,15 +1040,13 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
         </div>
         <div class="ch-actions">
           <button class="icon-btn" title="Trimite fișier" onclick="document.getElementById('file-input').click()">📎</button>
-          <button class="icon-btn" title="Setări conversație" onclick="openChatSettings()">⚙</button>
-          <button class="icon-btn" title="Deconectează" onclick="disconnectChat()" style="color:var(--danger)">✕</button>
+          <button class="icon-btn" title="Meniu contact" onclick="openContactMenu(event)" id="contact-menu-btn">⋮</button>
         </div>
       </div>
       <div id="messages"></div>
       <div id="input-area">
         <textarea id="msg-input" placeholder="Scrie un mesaj…" rows="1"
           oninput="autoResize(this)" onkeydown="handleMsgKey(event)"></textarea>
-        <button class="icon-btn" title="Trimite fișier" onclick="document.getElementById('file-input').click()">📎</button>
         <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
       </div>
     </div>
@@ -1010,6 +1056,16 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 
 <!-- ═══ FILE INPUT ═══ -->
 <input type="file" id="file-input" style="display:none" onchange="sendFile(this.files[0])">
+
+<!-- ═══ CONTACT MENU ═══ -->
+<div id="contact-menu">
+  <div class="menu-item" onclick="openRenameInline()">✏️ Redenumește</div>
+  <div class="menu-item" onclick="openChatSettings()">⚙️ Setări & criptare</div>
+  <div class="menu-item" onclick="document.getElementById('file-input').click();closeContactMenu()">📎 Trimite fișier</div>
+  <div class="menu-item-sep"></div>
+  <div class="menu-item danger" onclick="disconnectChat();closeContactMenu()">⏹ Deconectează</div>
+  <div class="menu-item danger" onclick="closeContactMenu();deleteCurrentContact()">🗑 Șterge contact</div>
+</div>
 
 <!-- ═══ DROP OVERLAY ═══ -->
 <div id="drop-overlay">
@@ -1023,8 +1079,8 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 <!-- ═══ MODAL: Profile ═══ -->
 <div class="modal-overlay" id="profile-modal">
   <div class="modal">
-    <div class="modal-title">Profilul meu</div>
-    <div class="modal-sub">Numele tău va fi văzut de persoanele cu care te conectezi.</div>
+    <div class="modal-title">👤 Profilul meu</div>
+    <div class="modal-sub">Cum vrei să apari când te conectezi cu cineva.</div>
     <div class="form-group">
       <label>Numele meu</label>
       <input type="text" id="profile-name-input" placeholder="ex: Alex">
@@ -1032,6 +1088,23 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
     <div class="btn-row">
       <button class="btn btn-primary" onclick="saveProfile()">Salvează</button>
       <button class="btn btn-ghost" onclick="closeModal('profile-modal')">Anulează</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Rename contact ═══ -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Redenumește contactul</div>
+    <div class="modal-sub">Numele e salvat doar local, nu e trimis celeilalte persoane.</div>
+    <div class="form-group">
+      <label>Nume afișat</label>
+      <input type="text" id="rename-input" placeholder="Numele contactului"
+        onkeydown="if(event.key==='Enter')saveRename()">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveRename()">Salvează</button>
+      <button class="btn btn-ghost" onclick="closeModal('rename-modal')">Anulează</button>
     </div>
   </div>
 </div>
@@ -1144,25 +1217,13 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 <!-- ═══ MODAL: Chat Settings ═══ -->
 <div class="modal-overlay" id="chat-settings-modal">
   <div class="modal">
-    <div class="modal-title">⚙ Setări conversație</div>
+    <div class="modal-title">🔒 Criptare conversație</div>
     <div class="modal-sub" id="cs-peer-name-display"></div>
 
     <div class="settings-row">
       <div>
-        <div class="settings-label">Redenumește contactul</div>
-        <div class="settings-sub">Schimbă cum apare acest contact la tine local.</div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Nume afișat</label>
-      <input type="text" id="cs-rename-input" placeholder="Numele contactului">
-    </div>
-    <button class="btn btn-ghost" style="margin-bottom:20px;" onclick="renameContact()">💾 Salvează numele</button>
-
-    <div class="settings-row">
-      <div>
-        <div class="settings-label">🔒 Criptare suplimentară</div>
-        <div class="settings-sub">Mesajele vor fi criptate cu AES-256 înainte de trimitere. Ambele persoane trebuie să aibă aceeași parolă.</div>
+        <div class="settings-label">Criptare AES-256 suplimentară</div>
+        <div class="settings-sub">Mesajele sunt criptate local înainte de trimitere. Ambele persoane trebuie să aibă aceeași parolă.</div>
       </div>
       <button class="toggle" id="enc-toggle" onclick="toggleEncryption()"></button>
     </div>
@@ -1173,13 +1234,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
         <input type="password" id="enc-password-input" placeholder="Introdu parola…" oninput="saveEncPassword()">
       </div>
       <div class="alert alert-info" style="font-size:11px;margin-top:0;">
-        🔑 Această parolă rămâne local. Nu este trimisă niciodată prin rețea. Ambii utilizatori trebuie să seteze aceeași parolă în setările conversației lor.
+        🔑 Parola rămâne local, nu trece niciodată prin rețea.
       </div>
     </div>
 
     <div class="btn-row" style="margin-top:20px;">
-      <button class="btn btn-danger" onclick="deleteCurrentContact()">🗑 Șterge contact</button>
-      <button class="btn btn-ghost" onclick="closeModal('chat-settings-modal')" style="margin-left:auto;">Închide</button>
+      <button class="btn btn-ghost" onclick="closeModal('chat-settings-modal')">Închide</button>
     </div>
   </div>
 </div>
@@ -1232,26 +1292,37 @@ const CHUNK = 16 * 1024;
 let fileChunks = {};
 
 // ══════════════════════════════════════════
+// RANDOM NAME GENERATOR
+// ══════════════════════════════════════════
+function generateRandomName() {
+  const adj = ['Rapid','Calm','Viteaz','Liber','Soarece','Brun','Verde','Argint','Auriu','Albastru',
+               'Polar','Solar','Nocturn','Cristalin','Furtunos','Senin','Magnetic','Atomic','Digital','Cosmic'];
+  const nou = ['Vultur','Lup','Urs','Tigru','Vulpe','Corb','Falcon','Bizon','Capra','Cerb',
+               'Jaguar','Pantera','Balaur','Zmeu','Phoenix','Cobra','Lynx','Delfin','Oryx','Puma'];
+  const a = adj[Math.floor(Math.random() * adj.length)];
+  const n = nou[Math.floor(Math.random() * nou.length)];
+  const num = Math.floor(Math.random() * 90) + 10;
+  return `${a}${n}${num}`;
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 function init() {
   if (!myName) {
-    myName = 'Utilizator';
+    myName = generateRandomName();
     DB.setMyName(myName);
   }
   document.getElementById('display-myname').textContent = myName;
   renderContactList();
 
-  // Check URL hash for pre-loaded offer
+  // Check URL hash for pre-loaded offer/answer
   checkURLHash();
 
   // Restore any pending signaling session from before reload
-  if (!location.hash.startsWith('#O:')) {
+  if (!location.hash.startsWith('#O:') && !location.hash.startsWith('#A:')) {
     restorePendingSession();
   }
-
-  // Ask for name if default
-  if (myName === 'Utilizator') setTimeout(openProfileModal, 600);
 }
 
 // ══════════════════════════════════════════
@@ -1592,49 +1663,86 @@ function checkURLHash() {
       document.getElementById('nc-initiator-view').style.display = 'none';
       document.getElementById('offer-in').value = code;
       openModal('new-conn-modal');
-      setAlert('nr-alert1', 'info', '✓ Cod preluat din link. Apasă "Generează răspuns".');
-      history.replaceState(null, '', location.pathname); // clean URL
-    }, 500);
+      setAlert('nr-alert1', 'ok', '✓ Cod preluat din link. Apasă "Generează răspuns".');
+      history.replaceState(null, '', location.pathname);
+    }, 400);
+
   } else if (hash.startsWith('#A:')) {
-    // Pre-filled answer → open as initiator waiting for answer
-    const code = hash.slice(3);
-    if (!code) return;
-    setTimeout(() => {
-      // Need to check if we have a pending offer session saved
-      const savedOffer = SS.load('pending_offer');
-      const savedCid   = SS.load('pending_cid');
-      if (!savedOffer || !savedCid) {
-        // No pending offer — just pre-fill the field and open modal at step 2
-        pendingRole = 'initiator';
-        pendingContactId = generateId();
-        // Can't restore PC without the offer, tell user to regenerate
-        openModal('new-conn-modal');
-        setAlert('nc-alert1', 'warn', '⚠ Nu există o sesiune activă. Generează o ofertă nouă și roagă Destinatarul să trimită un nou răspuns.');
-        history.replaceState(null, '', location.pathname);
+    // Pre-filled answer → open as initiator to apply it
+    const answerCode = hash.slice(3);
+    if (!answerCode) return;
+    history.replaceState(null, '', location.pathname);
+
+    setTimeout(async () => {
+      // If we have a live PC with pending offer → apply answer directly
+      if (pc && pc.signalingState === 'have-local-offer') {
+        try {
+          const sdp = await decompressSDP(answerCode);
+          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          // Restore UI to step 2 so user sees the connecting state
+          openModal('new-conn-modal');
+          document.getElementById('nc-initiator-view').style.display = 'block';
+          document.getElementById('nc-responder-view').style.display = 'none';
+          document.getElementById('nc-s1').style.display = 'none';
+          document.getElementById('nc-s2').style.display = 'block';
+          document.getElementById('nc-dot2').className = 'step-dot done';
+          document.getElementById('nc-dot3').className = 'step-dot active';
+          setAlert('nc-alert3', 'info', '⏳ Răspuns aplicat din link. Conectare în curs…');
+        } catch(e) {
+          openModal('new-conn-modal');
+          setAlert('nc-alert3', 'err', 'Eroare la aplicarea răspunsului: ' + e.message);
+        }
         return;
       }
-      // Restore the initiator session and pre-fill answer
-      pendingRole = 'initiator';
-      pendingContactId = savedCid;
-      pendingStep = SS.load('pending_step') || 1;
-      document.getElementById('nc-initiator-view').style.display = 'block';
-      document.getElementById('nc-responder-view').style.display = 'none';
-      document.getElementById('nc-s1').style.display = 'none';
-      document.getElementById('nc-s2').style.display = 'block';
-      document.getElementById('nc-dot1').className = 'step-dot done';
-      document.getElementById('nc-dot2').className = 'step-dot active';
-      document.getElementById('offer-out').value = savedOffer;
-      showCodeSize('offer-size-badge', savedOffer);
-      document.getElementById('answer-in').value = code;
-      openModal('new-conn-modal');
-      setAlert('nc-alert3', 'info', '✓ Răspuns preluat din link. Regenerează PC-ul și apasă Conectează.');
-      _restoreInitiatorPC().then(() => {
-        // After regeneration, pre-fill answer again (new offer generated)
-        document.getElementById('answer-in').value = code;
-        setAlert('nc-alert3', 'ok', '✓ Ofertă nouă + răspuns pre-completat. Apasă Conectează.');
-      });
-      history.replaceState(null, '', location.pathname);
-    }, 500);
+
+      // No live PC — check if we have a saved pending offer we can restore
+      const savedOffer = SS.load('pending_offer');
+      const savedCid   = SS.load('pending_cid');
+
+      if (savedOffer && savedCid) {
+        // Regenerate PC, re-apply offer, then apply answer
+        pendingRole = 'initiator';
+        pendingContactId = savedCid;
+        openModal('new-conn-modal');
+        document.getElementById('nc-initiator-view').style.display = 'block';
+        document.getElementById('nc-responder-view').style.display = 'none';
+        document.getElementById('nc-s1').style.display = 'none';
+        document.getElementById('nc-s2').style.display = 'block';
+        document.getElementById('nc-dot1').className = 'step-dot done';
+        document.getElementById('nc-dot2').className = 'step-dot active';
+        document.getElementById('offer-out').value = savedOffer;
+        showCodeSize('offer-size-badge', savedOffer);
+        setAlert('nc-alert3', 'info', '⏳ Se restaurează sesiunea și se aplică răspunsul…');
+        try {
+          // Recreate PC from saved offer
+          if (pc) pc.close();
+          createPC();
+          dc = pc.createDataChannel('chat');
+          dc.binaryType = 'arraybuffer';
+          setupDataChannel(dc);
+          const offerSdp = await decompressSDP(savedOffer);
+          await pc.setLocalDescription(new RTCSessionDescription(offerSdp));
+          // Now apply the answer
+          const answerSdp = await decompressSDP(answerCode);
+          await pc.setRemoteDescription(new RTCSessionDescription(answerSdp));
+          document.getElementById('nc-dot2').className = 'step-dot done';
+          document.getElementById('nc-dot3').className = 'step-dot active';
+          setAlert('nc-alert3', 'ok', '✓ Sesiune restaurată. Conectare în curs…');
+        } catch(e) {
+          setAlert('nc-alert3', 'err', '⚠ Răspunsul nu este compatibil cu oferta salvată. Generați o nouă ofertă.');
+          document.getElementById('nc-s1').style.display = 'block';
+          document.getElementById('nc-s2').style.display = 'none';
+        }
+      } else {
+        // No saved session at all — need fresh offer
+        pendingRole = 'initiator';
+        pendingContactId = generateId();
+        openModal('new-conn-modal');
+        document.getElementById('nc-initiator-view').style.display = 'block';
+        document.getElementById('nc-responder-view').style.display = 'none';
+        setAlert('nc-alert1', 'warn', '⚠ Sesiunea precedentă a expirat. Generează o ofertă nouă și cere un nou răspuns de la Destinatar.');
+      }
+    }, 400);
   }
 }
 
@@ -2077,13 +2185,53 @@ function handleMsgKey(e) {
 // ══════════════════════════════════════════
 // CHAT SETTINGS
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// CONTACT MENU
+// ══════════════════════════════════════════
+function openContactMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('contact-menu');
+  const btn  = document.getElementById('contact-menu-btn');
+  const rect = btn.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 6) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.style.left  = 'auto';
+  menu.classList.add('open');
+  // Close on outside click
+  setTimeout(() => document.addEventListener('click', closeContactMenuOnce, {once:true}), 10);
+}
+function closeContactMenuOnce() { closeContactMenu(); }
+function closeContactMenu() { document.getElementById('contact-menu').classList.remove('open'); }
+
+function openRenameInline() {
+  closeContactMenu();
+  if (!currentContactId) return;
+  const contact = DB.getContact(currentContactId);
+  const displayName = contact.customName || contact.peerName || 'Contact';
+  document.getElementById('rename-input').value = displayName;
+  openModal('rename-modal');
+  setTimeout(() => document.getElementById('rename-input').select(), 100);
+}
+
+function saveRename() {
+  if (!currentContactId) return;
+  const name = document.getElementById('rename-input').value.trim();
+  if (!name) return;
+  DB.updateContact(currentContactId, { customName: name });
+  renderContactList();
+  const contact = DB.getContact(currentContactId);
+  updateChatHeader(contact);
+  closeModal('rename-modal');
+  notify('✓ Contact redenumit: ' + name);
+}
+
 function openChatSettings() {
+  closeContactMenu();
   if (!currentContactId) return;
   const contact = DB.getContact(currentContactId);
   if (!contact) return;
   const displayName = contact.customName || contact.peerName || 'Contact';
   document.getElementById('cs-peer-name-display').textContent = 'Conversație cu: ' + displayName;
-  document.getElementById('cs-rename-input').value = displayName;
 
   const toggle = document.getElementById('enc-toggle');
   toggle.className = 'toggle' + (contact.encEnabled ? ' on' : '');
@@ -2095,14 +2243,8 @@ function openChatSettings() {
 }
 
 function renameContact() {
-  if (!currentContactId) return;
-  const name = document.getElementById('cs-rename-input').value.trim();
-  if (!name) return;
-  DB.updateContact(currentContactId, { customName: name });
-  renderContactList();
-  const contact = DB.getContact(currentContactId);
-  updateChatHeader(contact);
-  notify('✓ Contact redenumit');
+  // kept for backward compat, now calls saveRename
+  saveRename();
 }
 
 function toggleEncryption() {
