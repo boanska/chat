@@ -867,6 +867,101 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
   animation:pulse 1.4s ease-in-out infinite;
 }
 
+/* ─── CONN MODAL ─── */
+.conn-modal{padding:0;overflow:hidden;}
+
+.cm-state{padding:22px 22px 18px;display:none;}
+.cm-state.active{display:block;}
+
+.cm-icon-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.cm-icon{font-size:28px;flex-shrink:0;}
+.cm-title{font-size:16px;font-weight:700;margin-bottom:3px;}
+.cm-sub{font-size:12px;color:var(--text2);line-height:1.6;}
+
+.cm-spinner-wrap{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;gap:16px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cm-spinner{
+  width:38px;height:38px;
+  border:3px solid var(--border2);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+.cm-spinner-text{font-size:13px;color:var(--text2);font-family:var(--mono);}
+
+.cm-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+.cm-divider-text{
+  text-align:center;
+  font-size:11px;
+  color:var(--text3);
+  margin:14px 0 10px;
+  position:relative;
+}
+.cm-divider-text::before,.cm-divider-text::after{
+  content:'';
+  position:absolute;
+  top:50%;left:0;right:0;
+  height:1px;
+  background:var(--border);
+  z-index:0;
+}
+.cm-divider-text::before{right:calc(50% + 90px)}
+.cm-divider-text::after{left:calc(50% + 90px)}
+
+/* Pending connection badge in sidebar */
+#pending-conn-badge{
+  display:none;
+  margin:8px 10px 0;
+  padding:10px 12px;
+  background:rgba(59,130,246,.1);
+  border:1px solid rgba(59,130,246,.3);
+  border-radius:var(--r-sm);
+  cursor:pointer;
+  align-items:center;
+  gap:10px;
+  transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+#pending-conn-badge:hover{background:rgba(59,130,246,.18);}
+.pcb-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex-shrink:0;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+.pcb-info{flex:1;min-width:0;}
+.pcb-label{font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:2px;}
+.pcb-text{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pcb-cancel{
+  width:22px;height:22px;border-radius:50%;
+  background:transparent;border:1px solid var(--border2);
+  color:var(--text3);font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;padding:0;
+  transition:all .15s;
+}
+.pcb-cancel:hover{border-color:var(--danger);color:var(--danger);}
+
+/* Cross-tab success overlay */
+#cross-tab-overlay{
+  position:fixed;inset:0;
+  background:rgba(11,14,19,.95);
+  z-index:800;
+  display:none;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;
+  text-align:center;
+  padding:30px;
+}
+#cross-tab-overlay.show{display:flex;}
+.cto-icon{font-size:52px;}
+.cto-title{font-size:20px;font-weight:700;color:var(--text);}
+.cto-sub{font-size:14px;color:var(--text2);line-height:1.7;max-width:300px;}
+
 .paste-field-wrap{
   position:relative;
   display:flex;
@@ -1009,6 +1104,15 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
       <span>Tu ești: <b id="display-myname">—</b></span>
       <span class="my-name-edit" onclick="openProfileModal()">Schimbă</span>
     </div>
+    <!-- Pending connection badge -->
+    <div id="pending-conn-badge" onclick="reopenPendingModal()">
+      <div class="pcb-dot"></div>
+      <div class="pcb-info">
+        <div class="pcb-label">Conexiune în așteptare</div>
+        <div class="pcb-text" id="pcb-text">…</div>
+      </div>
+      <button class="pcb-cancel" onclick="event.stopPropagation();confirmCancelConn()" title="Anulează">✕</button>
+    </div>
     <div id="contact-list">
       <div class="empty-contacts" id="empty-msg">
         <div class="big">💬</div>
@@ -1131,110 +1235,131 @@ textarea{resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;
 </div>
 
 <!-- ═══ MODAL: New Connection ═══ -->
+<!-- ═══ CROSS-TAB OVERLAY ═══ -->
+<div id="cross-tab-overlay">
+  <div class="cto-icon">🔗</div>
+  <div class="cto-title" id="cto-title">Conectat!</div>
+  <div class="cto-sub" id="cto-sub">Conexiunea s-a stabilit în cealaltă fereastră.<br>Poți închide acest tab.</div>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="window.close()">Închide tab-ul</button>
+</div>
+
+<!-- ═══ MODAL: Conexiune nouă ═══ -->
 <div class="modal-overlay" id="new-conn-modal">
-  <div class="modal">
-    <div id="nc-initiator-view">
-      <div class="modal-title">📡 Conexiune nouă — Tu inițiezi</div>
-      <div class="modal-sub">Generezi un cod de conexiune și îl trimiți celeilalte persoane. ~500 caractere — merge prin SMS, email, orice.</div>
-      <div class="steps">
-        <div class="step-dot active" id="nc-dot1"></div>
-        <div class="step-dot" id="nc-dot2"></div>
-        <div class="step-dot" id="nc-dot3"></div>
-      </div>
+  <div class="modal conn-modal">
 
-      <div id="nc-s1">
-        <div class="instr"><b>Pasul 1:</b> Generează codul de conexiune și trimite-l celeilalte persoane.</div>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="gen-offer-btn" onclick="genOffer()">⚡ Inițiază conexiune</button>
-          <button class="btn btn-ghost" onclick="switchRole()">Schimbă rol →</button>
-          <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
-        </div>
-        <div id="nc-alert1"></div>
-      </div>
-
-      <div id="nc-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Trimite codul de mai jos celeilalte persoane.
-          <br><small style="color:var(--warn);opacity:.8">⚠ Nu reîncărca pagina — codul expiră la reload.</small>
-        </div>
-        <div class="code-display-wrap">
-          <div class="code-size-badge" id="offer-size-badge"></div>
-          <textarea id="offer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
-          <div class="code-actions">
-            <button class="btn btn-primary" onclick="copyCode('offer-out','nc-alert2')">📋 Copiază codul</button>
-            <button class="btn btn-ghost" onclick="copyAsLink('nc-alert2')">🔗 Copiază ca link</button>
-          </div>
-        </div>
-        <div id="nc-alert2"></div>
-        <div style="margin-top:18px">
-          <div class="instr"><b>Pasul 3:</b> Când primești <b>răspunsul</b>, lipește-l mai jos.
-            <span class="auto-paste-hint"> Auto-paste la focus ↓</span>
-          </div>
-          <div class="paste-field-wrap">
-            <textarea id="answer-in" class="code-textarea" rows="4"
-              placeholder="Lipește răspunsul primit… (auto-paste la focus)"
-              onfocus="tryAutoPaste(this,'nc-alert3')"></textarea>
-            <button class="paste-btn" onclick="manualPaste('answer-in','nc-alert3')" title="Lipește din clipboard">📋</button>
-          </div>
-          <div id="nc-alert3"></div>
-          <div class="form-group" style="margin-top:12px">
-            <label>Numele contactului (opțional)</label>
-            <input type="text" id="nc-contact-name" placeholder="ex: Maria">
-          </div>
-          <div class="btn-row"><button class="btn btn-teal" onclick="submitAnswer()">🔗 Conectează</button></div>
-        </div>
+    <!-- LOADING -->
+    <div class="cm-state" id="cm-loading">
+      <div class="cm-spinner-wrap">
+        <div class="cm-spinner"></div>
+        <div class="cm-spinner-text" id="cm-loading-text">Se generează codul…</div>
       </div>
     </div>
 
-    <div id="nc-responder-view" style="display:none">
-      <div class="modal-title">🔗 Conexiune nouă — Tu răspunzi</div>
-      <div class="modal-sub">Ai primit un cod de conexiune. Lipește-l, generezi un răspuns, trimiți înapoi.</div>
-      <div class="steps">
-        <div class="step-dot active" id="nr-dot1"></div>
-        <div class="step-dot" id="nr-dot2"></div>
-        <div class="step-dot" id="nr-dot3"></div>
+    <!-- INITIATOR: cod generat, aștept răspuns -->
+    <div class="cm-state" id="cm-initiator">
+      <div class="cm-icon-row">
+        <div class="cm-icon">📡</div>
+        <div>
+          <div class="cm-title">Trimite linkul de conexiune</div>
+          <div class="cm-sub">Cealaltă persoană îl deschide și răspunsul se generează automat.</div>
+        </div>
       </div>
-
-      <div id="nr-s1">
-        <div class="instr"><b>Pasul 1:</b> Lipește codul primit de la Inițiator.
-          <span class="auto-paste-hint"> Auto-paste la focus ↓</span>
-        </div>
-        <div class="paste-field-wrap">
-          <textarea id="offer-in" class="code-textarea" rows="4"
-            placeholder="Lipește codul primit… (auto-paste la focus)"
-            onfocus="tryAutoPaste(this,'nr-alert1')"></textarea>
-          <button class="paste-btn" onclick="manualPaste('offer-in','nr-alert1')" title="Lipește din clipboard">📋</button>
-        </div>
-        <div class="btn-row" style="margin-top:10px">
-          <button class="btn btn-primary" onclick="processOffer()">⚡ Generează răspuns</button>
-          <button class="btn btn-ghost" onclick="switchRole()">Schimbă rol →</button>
-          <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
-        </div>
-        <div id="nr-alert1"></div>
+      <div class="code-size-badge" id="offer-size-badge"></div>
+      <textarea id="offer-out" class="code-textarea" rows="3" readonly onclick="this.select()" style="margin-bottom:8px"></textarea>
+      <div class="cm-actions">
+        <button class="btn btn-primary" onclick="copyAsLink('cm-link-alert')">🔗 Copiază link</button>
+        <button class="btn btn-ghost" onclick="copyCode('offer-out','cm-link-alert')">📋 Copiază cod</button>
       </div>
-
-      <div id="nr-s2" style="display:none">
-        <div class="instr"><b>Pasul 2:</b> Trimite răspunsul Inițiatorului, apoi conexiunea se face automat.
-          <br><small style="color:var(--warn);opacity:.8">⚠ Nu reîncărca pagina — răspunsul expiră la reload.</small>
-        </div>
-        <div class="code-display-wrap">
-          <div class="code-size-badge" id="answer-size-badge"></div>
-          <textarea id="answer-out" class="code-textarea" rows="4" readonly onclick="this.select()"></textarea>
-          <div class="code-actions">
-            <button class="btn btn-primary" onclick="copyCode('answer-out','nr-alert2')">📋 Copiază răspunsul</button>
-            <button class="btn btn-ghost" onclick="copyAnswerAsLink('nr-alert2')">🔗 Copiază ca link</button>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:12px">
-          <label>Numele contactului (opțional)</label>
-          <input type="text" id="nr-contact-name" placeholder="ex: Ion">
-        </div>
-        <div id="nr-alert2"></div>
-        <div class="waiting-hint">
-          <span class="waiting-dot"></span>
-          Aștepți confirmarea Inițiatorului…
-        </div>
+      <div id="cm-link-alert"></div>
+      <div class="cm-divider-text">— sau, dacă ai primit deja un răspuns —</div>
+      <div class="paste-field-wrap">
+        <textarea id="answer-in" class="code-textarea" rows="2"
+          placeholder="Lipește codul / linkul #A: de răspuns…"
+          onfocus="tryAutoPaste(this,'cm-answer-alert')"></textarea>
+        <button class="paste-btn" onclick="manualPaste('answer-in','cm-answer-alert')">📋</button>
+      </div>
+      <div id="cm-answer-alert"></div>
+      <div class="form-group" style="margin-top:8px">
+        <input type="text" id="nc-contact-name" placeholder="Numele contactului (opțional)" style="font-size:14px">
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-teal" onclick="submitAnswer()">✓ Aplică răspunsul</button>
+        <button class="btn btn-ghost" onclick="confirmCancelConn()">✕ Anulează</button>
       </div>
     </div>
+
+    <!-- RESPONDER: lipesc cod, generez răspuns -->
+    <div class="cm-state" id="cm-responder">
+      <div class="cm-icon-row">
+        <div class="cm-icon">🔗</div>
+        <div>
+          <div class="cm-title">Lipește codul primit</div>
+          <div class="cm-sub">Lipește codul sau deschide linkul #O: — răspunsul se generează automat.</div>
+        </div>
+      </div>
+      <div class="paste-field-wrap" style="margin-top:8px">
+        <textarea id="offer-in" class="code-textarea" rows="3"
+          placeholder="Lipește codul primit… (auto-paste la focus)"
+          onfocus="tryAutoPaste(this,'cm-resp-alert')"></textarea>
+        <button class="paste-btn" onclick="manualPaste('offer-in','cm-resp-alert')">📋</button>
+      </div>
+      <div id="cm-resp-alert"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-primary" onclick="processOfferFromField()">⚡ Generează răspuns</button>
+        <button class="btn btn-ghost" onclick="closeModal('new-conn-modal')">Anulează</button>
+      </div>
+    </div>
+
+    <!-- RESPONDER: răspuns gata, trimite înapoi -->
+    <div class="cm-state" id="cm-answer-ready">
+      <div class="cm-icon-row">
+        <div class="cm-icon">✅</div>
+        <div>
+          <div class="cm-title">Trimite răspunsul înapoi</div>
+          <div class="cm-sub">Inițiatorul îl deschide și conexiunea se face automat.</div>
+        </div>
+      </div>
+      <div class="code-size-badge" id="answer-size-badge" style="margin-top:8px"></div>
+      <textarea id="answer-out" class="code-textarea" rows="3" readonly onclick="this.select()" style="margin-bottom:8px"></textarea>
+      <div class="cm-actions">
+        <button class="btn btn-primary" onclick="copyAnswerAsLink('cm-ans-alert')">🔗 Copiază link</button>
+        <button class="btn btn-ghost" onclick="copyCode('answer-out','cm-ans-alert')">📋 Copiază cod</button>
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <input type="text" id="nr-contact-name" placeholder="Numele contactului (opțional)" style="font-size:14px">
+      </div>
+      <div id="cm-ans-alert"></div>
+      <div class="waiting-hint" style="margin-top:12px">
+        <span class="waiting-dot"></span>
+        Aștept confirmarea de la Inițiator…
+      </div>
+    </div>
+
+    <!-- REFRESH NEEDED: PC mort, noul cod auto-generat -->
+    <div class="cm-state" id="cm-renew">
+      <div class="cm-icon-row">
+        <div class="cm-icon">↩️</div>
+        <div>
+          <div class="cm-title">Contactul a răspuns!</div>
+          <div class="cm-sub">Dar sesiunea s-a închis între timp. Trimite-le noul link de mai jos — ei vor răspunde automat, iar conexiunea se face.</div>
+        </div>
+      </div>
+      <div class="code-size-badge" id="offer-size-badge-exp" style="margin-top:8px"></div>
+      <textarea id="offer-out-exp" class="code-textarea" rows="3" readonly onclick="this.select()" style="margin-bottom:8px"></textarea>
+      <div class="cm-actions">
+        <button class="btn btn-primary" onclick="copyRenewAsLink('cm-renew-alert')">🔗 Copiază noul link</button>
+        <button class="btn btn-ghost" onclick="copyCode('offer-out-exp','cm-renew-alert')">📋 Copiază cod</button>
+      </div>
+      <div id="cm-renew-alert"></div>
+      <div class="waiting-hint" style="margin-top:12px">
+        <span class="waiting-dot"></span>
+        Aștept răspunsul la noul link…
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-ghost" style="font-size:12px;color:var(--danger)" onclick="confirmCancelConn()">✕ Renunță la conexiune</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1340,14 +1465,9 @@ function init() {
   }
   document.getElementById('display-myname').textContent = myName;
   renderContactList();
-
-  // Check URL hash for pre-loaded offer/answer
-  checkURLHash();
-
-  // Restore any pending signaling session from before reload
-  if (!location.hash.startsWith('#O:') && !location.hash.startsWith('#A:')) {
-    restorePendingSession();
-  }
+  setupBCListener();    // listen for cross-tab answer messages
+  updatePendingBadge(); // show badge if there's a saved pending connection
+  checkURLHash();       // handle #O: / #A: links
 }
 
 // ══════════════════════════════════════════
@@ -1581,247 +1701,194 @@ function showCodeSize(elId, code) {
 }
 
 // ══════════════════════════════════════════
-// SESSION PERSISTENCE (localStorage — survives refresh AND tab close)
 // ══════════════════════════════════════════
+// SIGNALING — persistent state + BroadcastChannel cross-tab
+// ══════════════════════════════════════════
+
+// localStorage keys for pending connection
 const SS = {
-  save: (key, val) => { try { localStorage.setItem('chatbsk_sig_'+key, JSON.stringify(val)); } catch {} },
-  load: (key) => { try { const v = localStorage.getItem('chatbsk_sig_'+key); return v ? JSON.parse(v) : null; } catch { return null; } },
-  clear: (key) => { try { localStorage.removeItem('chatbsk_sig_'+key); } catch {} },
-  clearAll: () => { ['pending_role','pending_cid','pending_offer','pending_answer','pending_step'].forEach(k=>SS.clear(k)); }
+  save: (k,v) => { try{ localStorage.setItem('bsk_'+k, JSON.stringify(v)); }catch{} },
+  load: (k) => { try{ const v=localStorage.getItem('bsk_'+k); return v?JSON.parse(v):null; }catch{return null;} },
+  del:  (k) => { try{ localStorage.removeItem('bsk_'+k); }catch{} },
+  clearConn: () => ['cid','name','offer_code'].forEach(k=>SS.del(k))
 };
 
-function restorePendingSession() {
-  // WebRTC sessions cannot survive a page reload — clear any stale signaling data
-  SS.clearAll();
+// BroadcastChannel: lets a new tab send answer to the original tab
+let _bc = null;
+function getBC() {
+  if (!_bc) {
+    try { _bc = new BroadcastChannel('chatbsk_signal'); } catch { _bc = null; }
+  }
+  return _bc;
+}
+function setupBCListener() {
+  const bc = getBC();
+  if (!bc) return;
+  bc.onmessage = async (e) => {
+    const { type, code } = e.data || {};
+    if (type === 'apply_answer' && pc && pc.signalingState === 'have-local-offer') {
+      try {
+        const sdp = await decompressSDP(code);
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        bc.postMessage({ type: 'answer_applied' });
+        // modal will close via onConnected
+      } catch(err) {
+        bc.postMessage({ type: 'answer_error', msg: err.message });
+      }
+    }
+  };
 }
 
-// resetAndGenOffer - called when user wants to start fresh after expired session
-function resetAndGenOffer() {
-  document.getElementById('nc-s2').style.display = 'none';
-  document.getElementById('nc-s1').style.display = 'block';
-  document.getElementById('nc-dot1').className = 'step-dot active';
-  document.getElementById('nc-dot2').className = 'step-dot';
-  document.getElementById('nc-dot3').className = 'step-dot';
-  document.getElementById('nc-alert1').innerHTML = '';
+// ─ Show/hide pending badge ─
+function updatePendingBadge() {
+  const badge = document.getElementById('pending-conn-badge');
+  const cid = SS.load('cid');
+  if (!badge) return;
+  if (cid && pc && pc.signalingState === 'have-local-offer') {
+    badge.style.display = 'flex';
+    const name = SS.load('name') || 'contact nou';
+    document.getElementById('pcb-text').textContent = 'Aștept răspuns de la: ' + name;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Show correct panel inside modal
+function showConnPanel(id) {
+  ['cm-loading','cm-initiator','cm-responder','cm-answer-ready','cm-renew'].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.toggle('active', s === id);
+  });
+  openModal('new-conn-modal');
+}
+
+// Cancel / confirm cancel
+function confirmCancelConn() {
+  if (!confirm('Anulezi conexiunea în curs?')) return;
+  SS.clearConn();
   if (pc) { pc.close(); pc = null; }
-  SS.clearAll();
-  pendingContactId = currentContactId || generateId();
-  genOffer();
+  closeModal('new-conn-modal');
+  updatePendingBadge();
 }
 
-// ── URL hash connection code detection ──
+function reopenPendingModal() {
+  const code = SS.load('offer_code');
+  if (code && pc && pc.signalingState === 'have-local-offer') {
+    document.getElementById('offer-out').value = code;
+    showCodeSize('offer-size-badge', code);
+    showConnPanel('cm-initiator');
+  } else {
+    openNewConnectionModal();
+  }
+}
+
+// ─── checkURLHash ─────────────────────────────────────
 function checkURLHash() {
   const hash = location.hash;
 
   if (hash.startsWith('#O:')) {
-    // Connection code link → open as responder
+    // Offer link → auto-generate answer with zero clicks
     const code = hash.slice(3);
-    if (!code) return;
     history.replaceState(null, '', location.pathname);
-    setTimeout(() => {
-      pendingRole = 'responder';
-      pendingContactId = generateId();
-      document.getElementById('nc-responder-view').style.display = 'block';
-      document.getElementById('nc-initiator-view').style.display = 'none';
-      document.getElementById('offer-in').value = code;
-      openModal('new-conn-modal');
-      setAlert('nr-alert1', 'ok', '✓ Cod preluat din link. Apasă "Generează răspuns".');
-    }, 400);
+    if (code) setTimeout(() => autoProcessOffer(code), 200);
 
   } else if (hash.startsWith('#A:')) {
-    // Answer link → only valid if initiator's PC is still alive (no reload happened)
-    const answerCode = hash.slice(3);
-    if (!answerCode) return;
+    // Answer link
+    const ansCode = hash.slice(3);
     history.replaceState(null, '', location.pathname);
+    if (!ansCode) return;
 
     setTimeout(async () => {
+      // 1. Try to apply to live PC in THIS tab
       if (pc && pc.signalingState === 'have-local-offer') {
-        // PC alive — apply answer directly
         try {
-          const sdp = await decompressSDP(answerCode);
+          const sdp = await decompressSDP(ansCode);
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-          // Show "connecting" state in modal
-          openModal('new-conn-modal');
-          document.getElementById('nc-initiator-view').style.display = 'block';
-          document.getElementById('nc-responder-view').style.display = 'none';
-          document.getElementById('nc-s1').style.display = 'none';
-          document.getElementById('nc-s2').style.display = 'block';
-          document.getElementById('nc-dot1').className = 'step-dot done';
-          document.getElementById('nc-dot2').className = 'step-dot done';
-          document.getElementById('nc-dot3').className = 'step-dot active';
-          setAlert('nc-alert3', 'info', '⏳ Răspuns aplicat. Conectare în curs…');
+          showConnPanel('cm-loading');
+          document.getElementById('cm-loading-text').textContent = 'Conectare în curs…';
         } catch(e) {
-          openModal('new-conn-modal');
-          document.getElementById('nc-initiator-view').style.display = 'block';
-          document.getElementById('nc-responder-view').style.display = 'none';
-          setAlert('nc-alert1', 'err', 'Eroare la aplicarea răspunsului: ' + e.message);
+          notify('Răspuns invalid: ' + e.message);
         }
-      } else {
-        // PC is dead — session expired after reload, must start fresh
-        SS.clearAll();
-        pendingRole = 'initiator';
-        pendingContactId = currentContactId || generateId();
-        openModal('new-conn-modal');
-        document.getElementById('nc-initiator-view').style.display = 'block';
-        document.getElementById('nc-responder-view').style.display = 'none';
-        document.getElementById('nc-s1').style.display = 'block';
-        document.getElementById('nc-s2').style.display = 'none';
-        setAlert('nc-alert1', 'err',
-          '⚠ Sesiunea a expirat — pagina a fost reîncărcată și codul de conexiune s-a pierdut.' +
-          '<br><button class="btn btn-primary" style="margin-top:8px;font-size:12px" onclick="resetAndGenOffer()">⚡ Inițiază conexiune nouă</button>'
-        );
+        return;
       }
-    }, 400);
+
+      // 2. Try to broadcast to another open tab with live PC
+      const bc = getBC();
+      if (bc) {
+        let replied = false;
+        const timeout = setTimeout(() => {
+          if (!replied) handleDeadSession(ansCode);
+        }, 2500);
+
+        bc.postMessage({ type: 'apply_answer', code: ansCode });
+
+        const origHandler = bc.onmessage;
+        bc.onmessage = (e) => {
+          if (origHandler) origHandler(e);
+          if (e.data?.type === 'answer_applied') {
+            replied = true;
+            clearTimeout(timeout);
+            showCrossTabSuccess();
+          } else if (e.data?.type === 'answer_error') {
+            replied = true;
+            clearTimeout(timeout);
+            handleDeadSession(ansCode);
+          }
+        };
+      } else {
+        handleDeadSession(ansCode);
+      }
+    }, 200);
   }
 }
 
-// ══════════════════════════════════════════
-// AUTO CLIPBOARD PASTE
-// ══════════════════════════════════════════
-let lastAutoPasteTarget = null;
-
-async function tryAutoPaste(el, alertId) {
-  if (el.value.trim()) return; // already has content
-  if (el === lastAutoPasteTarget) return; // don't repeat on same element
-  lastAutoPasteTarget = el;
-  try {
-    const text = await navigator.clipboard.readText();
-    if (!text || text.length < 20) return; // too short to be a code
-    // Check if looks like a valid code (base64url characters)
-    if (/^[A-Za-z0-9+/\-_=]{20,}$/.test(text.trim())) {
-      el.value = text.trim();
-      el.style.borderColor = 'var(--teal)';
-      setTimeout(() => el.style.borderColor = '', 1500);
-      if (alertId) setAlert(alertId, 'ok', '✓ Auto-paste din clipboard.');
-    }
-  } catch {
-    // Clipboard permission denied — silent
-  }
-}
-
-async function manualPaste(elId, alertId) {
-  const el = document.getElementById(elId);
-  try {
-    const text = await navigator.clipboard.readText();
-    if (text && text.trim()) {
-      el.value = text.trim();
-      if (alertId) setAlert(alertId, 'ok', '✓ Lipit din clipboard.');
-    }
-  } catch {
-    setAlert(alertId, 'info', 'Permisiune clipboard refuzată. Lipește manual (Ctrl+V / long-press).');
-    el.focus();
-  }
-}
-
-// ══════════════════════════════════════════
-// SIGNALING FLOWS
-// ══════════════════════════════════════════
-
-function openNewConnectionModal() {
-  resetSignalingUI();
+// Called when #A: arrives but no live PC anywhere — start fresh automatically
+async function handleDeadSession(deadAnswerCode) {
   pendingRole = 'initiator';
-  pendingContactId = generateId();
-  document.getElementById('nc-initiator-view').style.display = 'block';
-  document.getElementById('nc-responder-view').style.display = 'none';
-  openModal('new-conn-modal');
-}
-
-function switchRole() {
-  if (pendingRole === 'initiator') {
-    pendingRole = 'responder';
-    document.getElementById('nc-initiator-view').style.display = 'none';
-    document.getElementById('nc-responder-view').style.display = 'block';
-  } else {
-    pendingRole = 'initiator';
-    pendingContactId = generateId();
-    document.getElementById('nc-responder-view').style.display = 'none';
-    document.getElementById('nc-initiator-view').style.display = 'block';
-  }
-  if (pc) { pc.close(); pc = null; }
-}
-
-function resetSignalingUI() {
-  ['nc-s1','nc-s2','nr-s1','nr-s2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id.endsWith('1') ? 'block' : 'none';
-  });
-  ['nc-dot1','nc-dot2','nc-dot3','nr-dot1','nr-dot2','nr-dot3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.className = 'step-dot' + (id.endsWith('1') ? ' active' : '');
-  });
-  ['offer-out','answer-in','offer-in','answer-out'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['nc-contact-name','nr-contact-name'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  ['nc-alert1','nc-alert2','nc-alert3','nr-alert1','nr-alert2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
-  ['offer-size-badge','answer-size-badge'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.textContent='';
-  });
-  lastAutoPasteTarget = null;
-  if (pc) { pc.close(); pc = null; }
-  SS.clearAll();
-}
-
-async function genOffer() {
-  const btn = document.getElementById('gen-offer-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Se generează…'; }
+  pendingContactId = SS.load('cid') || currentContactId || generateId();
+  showConnPanel('cm-loading');
+  document.getElementById('cm-loading-text').textContent = 'Contactul a răspuns — se pregătește noul link…';
   if (pc) pc.close();
   createPC();
   dc = pc.createDataChannel('chat');
   dc.binaryType = 'arraybuffer';
   setupDataChannel(dc);
-  setAlert('nc-alert1', 'info', 'Se inițiază conexiunea…');
   try {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await waitICE(pc);
     const code = await compressSDP(pc.localDescription);
-    document.getElementById('offer-out').value = code;
-    showCodeSize('offer-size-badge', code);
-
-    document.getElementById('nc-s1').style.display = 'none';
-    document.getElementById('nc-s2').style.display = 'block';
-    document.getElementById('nc-dot1').className = 'step-dot done';
-    document.getElementById('nc-dot2').className = 'step-dot active';
-    setAlert('nc-alert2', 'ok', `✓ ${code.length} caractere — copiază și trimite.`);
+    document.getElementById('offer-out-exp').value = code;
+    showCodeSize('offer-size-badge-exp', code);
+    SS.save('cid', pendingContactId);
+    SS.save('offer_code', code);
+    updatePendingBadge();
+    // Auto-copy new link
+    const link = location.href.split('#')[0] + '#O:' + code;
+    try { await navigator.clipboard.writeText(link); } catch {}
+    showConnPanel('cm-renew');
+    setAlert('cm-renew-alert', 'ok', '✓ Noul link a fost copiat automat! Trimite-l la contact — ei vor răspunde automat.');
   } catch(e) {
-    setAlert('nc-alert1', 'err', 'Eroare: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '⚡ Inițiază conexiune'; }
+    notify('Eroare: ' + e.message);
+    closeModal('new-conn-modal');
   }
 }
 
-async function submitAnswer() {
-  const ansStr = document.getElementById('answer-in').value.trim();
-  if (!ansStr) { setAlert('nc-alert3', 'err', 'Lipește răspunsul!'); return; }
-  try {
-    const sdp = await decompressSDP(ansStr);
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-    const customName = document.getElementById('nc-contact-name').value.trim();
-    if (customName) pendingContactName = customName;
-    document.getElementById('nc-dot2').className = 'step-dot done';
-    document.getElementById('nc-dot3').className = 'step-dot active';
-    setAlert('nc-alert3', 'info', 'Conectare în curs…');
-  } catch(e) {
-    setAlert('nc-alert3', 'err', 'Cod invalid sau expirat: ' + e.message);
-  }
+function showCrossTabSuccess() {
+  const overlay = document.getElementById('cross-tab-overlay');
+  if (overlay) overlay.classList.add('show');
 }
 
-async function processOffer() {
-  const ofStr = document.getElementById('offer-in').value.trim();
-  if (!ofStr) { setAlert('nr-alert1', 'err', 'Lipește codul!'); return; }
+// ─── Auto-process an offer (responder side) ───────────
+async function autoProcessOffer(offerCode) {
+  pendingRole = 'responder';
+  pendingContactId = generateId();
+  showConnPanel('cm-loading');
+  document.getElementById('cm-loading-text').textContent = 'Se generează răspunsul automat…';
   if (pc) pc.close();
   createPC();
-  setAlert('nr-alert1', 'info', 'Se procesează…');
   try {
-    const sdp = await decompressSDP(ofStr);
+    const sdp = await decompressSDP(offerCode);
     await pc.setRemoteDescription(new RTCSessionDescription(sdp));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -1829,80 +1896,168 @@ async function processOffer() {
     const code = await compressSDP(pc.localDescription);
     document.getElementById('answer-out').value = code;
     showCodeSize('answer-size-badge', code);
-
-    document.getElementById('nr-s1').style.display = 'none';
-    document.getElementById('nr-s2').style.display = 'block';
-    document.getElementById('nr-dot1').className = 'step-dot done';
-    document.getElementById('nr-dot2').className = 'step-dot active';
-    setAlert('nr-alert2', 'ok', `✓ ${code.length} caractere — copiază și trimite Inițiatorului.`);
+    // Auto-copy answer link
+    const link = location.href.split('#')[0] + '#A:' + code;
+    let autoCopied = false;
+    try { await navigator.clipboard.writeText(link); autoCopied = true; } catch {}
+    showConnPanel('cm-answer-ready');
+    setAlert('cm-ans-alert', autoCopied
+      ? '✓ Linkul de răspuns a fost copiat automat! Trimite-l la Inițiator.'
+      : 'Apasă "Copiază link" și trimite-l la Inițiator.', 'ok');
   } catch(e) {
-    setAlert('nr-alert1', 'err', 'Cod invalid sau expirat: ' + e.message);
+    showConnPanel('cm-responder');
+    setAlert('cm-resp-alert', 'err', 'Cod invalid: ' + e.message);
   }
 }
 
-// Copy compressed code to clipboard
-async function copyCode(inputId, alertId) {
-  const val = document.getElementById(inputId)?.value;
+// ─── Open new connection modal (initiator) ──────────
+function openNewConnectionModal() {
+  pendingRole = 'initiator';
+  pendingContactId = generateId();
+  if (pc) { pc.close(); pc = null; }
+  SS.clearConn();
+  ['offer-out','answer-in','offer-in','answer-out','offer-out-exp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['cm-link-alert','cm-answer-alert','cm-resp-alert','cm-ans-alert','cm-renew-alert'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML='';
+  });
+  ['offer-size-badge','answer-size-badge','offer-size-badge-exp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+  lastAutoPasteTarget = null;
+  showConnPanel('cm-loading');
+  genOffer();
+}
+
+async function genOffer() {
+  if (pc) pc.close();
+  createPC();
+  dc = pc.createDataChannel('chat');
+  dc.binaryType = 'arraybuffer';
+  setupDataChannel(dc);
+  document.getElementById('cm-loading-text').textContent = 'Se generează codul…';
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitICE(pc);
+    const code = await compressSDP(pc.localDescription);
+    document.getElementById('offer-out').value = code;
+    showCodeSize('offer-size-badge', code);
+    SS.save('cid', pendingContactId);
+    SS.save('offer_code', code);
+    // Auto-copy offer link
+    const link = location.href.split('#')[0] + '#O:' + code;
+    let autoCopied = false;
+    try { await navigator.clipboard.writeText(link); autoCopied = true; } catch {}
+    updatePendingBadge();
+    showConnPanel('cm-initiator');
+    if (autoCopied) setAlert('cm-link-alert', 'ok', '✓ Link copiat automat! Trimite-l la contact.');
+  } catch(e) {
+    closeModal('new-conn-modal');
+    notify('Eroare la generarea codului: ' + e.message);
+  }
+}
+
+async function submitAnswer() {
+  const ansStr = document.getElementById('answer-in').value.trim();
+  if (!ansStr) { setAlert('cm-answer-alert', 'err', 'Lipește răspunsul primit!'); return; }
+  showConnPanel('cm-loading');
+  document.getElementById('cm-loading-text').textContent = 'Conectare în curs…';
+  try {
+    const sdp = await decompressSDP(ansStr);
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const name = document.getElementById('nc-contact-name').value.trim();
+    if (name) pendingContactName = name;
+  } catch(e) {
+    showConnPanel('cm-initiator');
+    setAlert('cm-answer-alert', 'err', 'Cod invalid: ' + e.message);
+  }
+}
+
+async function processOfferFromField() {
+  const ofStr = document.getElementById('offer-in').value.trim();
+  if (!ofStr) { setAlert('cm-resp-alert', 'err', 'Lipește codul!'); return; }
+  await autoProcessOffer(ofStr);
+}
+
+// ─── Copy helpers ────────────────────────────────────
+async function copyCode(id, alertId) {
+  const val = document.getElementById(id)?.value;
   if (!val) return;
-  try {
-    await navigator.clipboard.writeText(val);
-    setAlert(alertId, 'ok', '✓ Copiat în clipboard!');
-  } catch {
-    document.getElementById(inputId).select();
-    document.execCommand('copy');
-    setAlert(alertId, 'ok', '✓ Copiat!');
-  }
+  try { await navigator.clipboard.writeText(val); }
+  catch { document.getElementById(id).select(); document.execCommand('copy'); }
+  if (alertId) setAlert(alertId, 'ok', '✓ Copiat!');
 }
-
-// Copy as shareable link (#O: hash)
 async function copyAsLink(alertId) {
-  const code = document.getElementById('offer-out')?.value;
-  if (!code) return;
+  const code = document.getElementById('offer-out')?.value; if (!code) return;
   const link = location.href.split('#')[0] + '#O:' + code;
-  try {
-    await navigator.clipboard.writeText(link);
-    setAlert(alertId, 'ok', '✓ Link copiat! Destinatarul îl deschide în browser și codul e pre-completat automat.');
-  } catch {
-    setAlert(alertId, 'err', 'Nu s-a putut copia link-ul.');
-  }
+  try { await navigator.clipboard.writeText(link); setAlert(alertId,'ok','✓ Link copiat!'); }
+  catch { setAlert(alertId,'err','Nu s-a putut copia.'); }
 }
-
 async function copyAnswerAsLink(alertId) {
-  const code = document.getElementById('answer-out')?.value;
-  if (!code) return;
+  const code = document.getElementById('answer-out')?.value; if (!code) return;
   const link = location.href.split('#')[0] + '#A:' + code;
-  try {
-    await navigator.clipboard.writeText(link);
-    setAlert(alertId, 'ok', '✓ Link copiat! Inițiatorul îl deschide și răspunsul e pre-completat automat.');
-  } catch {
-    setAlert(alertId, 'err', 'Nu s-a putut copia link-ul.');
-  }
+  try { await navigator.clipboard.writeText(link); setAlert(alertId,'ok','✓ Link copiat!'); }
+  catch { setAlert(alertId,'err','Nu s-a putut copia.'); }
+}
+async function copyRenewAsLink(alertId) {
+  const code = document.getElementById('offer-out-exp')?.value; if (!code) return;
+  const link = location.href.split('#')[0] + '#O:' + code;
+  try { await navigator.clipboard.writeText(link); setAlert(alertId,'ok','✓ Noul link copiat!'); }
+  catch { setAlert(alertId,'err','Nu s-a putut copia.'); }
 }
 
-// ─ Reconnect to existing contact ─
+// ─── Reconnect ───────────────────────────────────────
 function openReconnectModal(role) {
-  pendingRole = role;
   pendingContactId = currentContactId;
-  resetSignalingUI();
   if (role === 'initiator') {
-    document.getElementById('nc-initiator-view').style.display = 'block';
-    document.getElementById('nc-responder-view').style.display = 'none';
+    pendingRole = 'initiator';
+    SS.clearConn();
+    if (pc) { pc.close(); pc = null; }
+    showConnPanel('cm-loading');
     openModal('new-conn-modal');
     genOffer();
   } else {
-    document.getElementById('nc-responder-view').style.display = 'block';
-    document.getElementById('nc-initiator-view').style.display = 'none';
+    pendingRole = 'responder';
+    showConnPanel('cm-responder');
     openModal('new-conn-modal');
-    // Try auto-paste clipboard on open
-    setTimeout(() => tryAutoPaste(document.getElementById('offer-in'), 'nr-alert1'), 300);
+    setTimeout(() => tryAutoPaste(document.getElementById('offer-in'), 'cm-resp-alert'), 300);
   }
 }
+
+// ─── Auto clipboard paste ────────────────────────────
+let lastAutoPasteTarget = null;
+async function tryAutoPaste(el, alertId) {
+  if (el.value.trim() || el === lastAutoPasteTarget) return;
+  lastAutoPasteTarget = el;
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || text.length < 20) return;
+    if (/^[A-Za-z0-9+/\-_=]{20,}$/.test(text.trim())) {
+      el.value = text.trim();
+      el.style.borderColor = 'var(--teal)';
+      setTimeout(()=>el.style.borderColor='', 1500);
+      if (alertId) setAlert(alertId,'ok','✓ Auto-paste din clipboard.');
+    }
+  } catch { /* silent */ }
+}
+async function manualPaste(elId, alertId) {
+  const el = document.getElementById(elId);
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text?.trim()) { el.value = text.trim(); if (alertId) setAlert(alertId,'ok','✓ Lipit.'); }
+  } catch { if (alertId) setAlert(alertId,'info','Lipește manual (Ctrl+V / long-press).'); el.focus(); }
+}
+
+
 
 // ── CONNECTED ──
 let pendingContactName = '';
 
 function onConnected() {
-  SS.clearAll(); // connection succeeded — clear pending session
+  SS.clearConn(); // connection succeeded — clear pending session
+  updatePendingBadge();
   closeModal('new-conn-modal');
   detectConnectionType();
 
